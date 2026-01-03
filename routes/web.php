@@ -1,47 +1,143 @@
 <?php
-
+use App\Http\Controllers\Demo1\SecretaryServiceRequestController;
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\Demo1\UsersController;
+use App\Livewire\Auth\ForgotPasswordForm;
+use App\Livewire\Auth\LoginForm;
+use App\Livewire\Auth\RegisterForm;
+use App\Livewire\Auth\ResetPasswordForm;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Livewire\Demo1\Index as Demo1Index;
-use App\Livewire\Demo2\Index as Demo2Index;
-use App\Livewire\Demo3\Index as Demo3Index;
-use App\Livewire\Demo4\Index as Demo4Index;
-use App\Livewire\Demo5\Index as Demo5Index;
-use App\Livewire\Demo6\Index as Demo6Index;
-use App\Livewire\Demo7\Index as Demo7Index;
-use App\Livewire\Demo8\Index as Demo8Index;
-use App\Livewire\Demo9\Index as Demo9Index;
-use App\Livewire\Demo10\Index as Demo10Index;
+use App\Http\Controllers\Demo1\ServiceRequestController;
 
+/*
+|--------------------------------------------------------------------------
+| Public Routes
+|--------------------------------------------------------------------------
+*/
 Route::get('/', function () {
-    return redirect()->route('demo1.index');
+    return Auth::check() ? redirect()->route('dashboard') : redirect()->route('login');
+})->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| Guest Routes (Auth)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('guest')->group(function () {
+    Route::get('/login', LoginForm::class)->name('login');
+    Route::get('/register', RegisterForm::class)->name('register');
+    Route::get('/forgot-password', ForgotPasswordForm::class)->name('password.request');
+    Route::get('/reset-password/{token}', ResetPasswordForm::class)->name('password.reset');
+
 });
 
-// Demo1 routes
-Route::get('/demo1', Demo1Index::class)->name('demo1.index');
+    /*
+|--------------------------------------------------------------------------
+| Account Activation Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/account/activate/{token}', [\App\Http\Controllers\Auth\AccountActivationController::class, 'show'])
+    ->name('account.activate');
 
-// Demo2 routes
-Route::get('/demo2', Demo2Index::class)->name('demo2.index');
+Route::post('/account/activate/{token}', [\App\Http\Controllers\Auth\AccountActivationController::class, 'activate'])
+    ->name('account.activate.submit');
 
-// Demo3 routes
-Route::get('/demo3', Demo3Index::class)->name('demo3.index');
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
 
-// Demo4 routes
-Route::get('/demo4', Demo4Index::class)->name('demo4.index');
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard - Redirection par rôle
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/dashboard', function () {
+        $user = Auth::user();
 
-// Demo5 routes
-Route::get('/demo5', Demo5Index::class)->name('demo5.index');
+        // Rediriger chaque rôle vers son dashboard spécifique
+        return match($user->role) {
+            'doctor' => view('demo1.doctor.dashboard'),
+            'secretary' => view('demo1.secretary.dashboard'),
+            'nurse' => view('demo1.nurse.dashboard'),
+            'patient' => view('demo1.patient.dashboard'),
+            default => view('demo1.dashboard'),
+        };
+    })->name('dashboard');
 
-// Demo6 routes
-Route::get('/demo6', Demo6Index::class)->name('demo6.index');
+    /*
+    |--------------------------------------------------------------------------
+    | User Management (Permissions gérées par UserPolicy)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UsersController::class, 'index'])->name('index');
+        Route::get('/create', [UsersController::class, 'create'])->name('create');
+        Route::post('/', [UsersController::class, 'store'])->name('store');
+        Route::get('/{id}', [UsersController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [UsersController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [UsersController::class, 'update'])->name('update');
+        Route::delete('/{id}', [UsersController::class, 'destroy'])->name('destroy');
 
-// Demo7 routes
-Route::get('/demo7', Demo7Index::class)->name('demo7.index');
+        // Routes AJAX
+        Route::patch('/{id}/toggle-status', [UsersController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{id}/reset-password', [UsersController::class, 'resetPassword'])->name('reset-password');
+    });
 
-// Demo8 routes
-Route::get('/demo8', Demo8Index::class)->name('demo8.index');
+    /*
+    |--------------------------------------------------------------------------
+    | Appointment Management (Permissions gérées par AppointmentPolicy)
+    |--------------------------------------------------------------------------
+    */
+    Route::resource('appointments', AppointmentController::class);
 
-// Demo9 routes
-Route::get('/demo9', Demo9Index::class)->name('demo9.index');
+    // Routes AJAX pour les actions sur les rendez-vous
+    Route::prefix('appointments')->name('appointments.')->group(function () {
+        Route::patch('{appointment}/confirm', [AppointmentController::class, 'confirm'])->name('confirm');
+        Route::patch('{appointment}/start', [AppointmentController::class, 'start'])->name('start');
+        Route::patch('{appointment}/complete', [AppointmentController::class, 'complete'])->name('complete');
+        Route::patch('{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('cancel');
+        Route::post('check-availability', [AppointmentController::class, 'checkAvailability'])->name('check-availability');
+    });
 
-// Demo10 routes
-Route::get('/demo10', Demo10Index::class)->name('demo10.index');
+        /*
+    |--------------------------------------------------------------------------
+    | Service Requests (Demandes du site vitrine)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('service-requests')->name('service-requests.')->group(function () {
+        Route::get('/', [ServiceRequestController::class, 'index'])->name('index');
+        Route::get('/{serviceRequest}', [ServiceRequestController::class, 'show'])->name('show');
+        Route::post('/{serviceRequest}/contacted', [ServiceRequestController::class, 'markContacted'])->name('contacted');
+        Route::post('/{serviceRequest}/convert', [ServiceRequestController::class, 'convertToAppointment'])->name('convert');
+        Route::post('/{serviceRequest}/reject', [ServiceRequestController::class, 'reject'])->name('reject');
+        Route::post('/{serviceRequest}/notes', [ServiceRequestController::class, 'addNotes'])->name('notes');
+    });
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Secretary Service Requests Actions
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('secretary/service-requests')->name('secretary.service-requests.')->group(function () {
+        Route::post('/{serviceRequest}/mark-paid', [SecretaryServiceRequestController::class, 'markPaid'])->name('mark-paid');
+        Route::post('/{serviceRequest}/send-to-doctor', [SecretaryServiceRequestController::class, 'sendToDoctor'])->name('send-to-doctor');
+        Route::post('/{serviceRequest}/cancel-send', [SecretaryServiceRequestController::class, 'cancelSendToDoctor'])->name('cancel-send');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logout
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/logout', function () {
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect()->route('login')->with('success', 'Déconnexion réussie.');
+    })->name('logout');
+});

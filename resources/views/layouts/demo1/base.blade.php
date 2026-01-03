@@ -1,37 +1,44 @@
 <!DOCTYPE html>
 <html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
-    <head>
-        @include('layouts.partials.head')
-        @livewireStyles
-    </head>
-    <body class="demo1 kt-sidebar-fixed kt-header-fixed flex h-full bg-background text-base text-foreground antialiased">
-        <livewire:shared.theme-toggle />
 
-        <!-- Page -->
-        <!-- Main -->
-        <div class="flex grow">
-            <livewire:demo1.sidebar />
+<head>
+    @include('layouts.partials.head')
+    @livewireStyles
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
 
-            <!-- Wrapper -->
-            <div class="kt-wrapper flex grow flex-col">
-                @persist('mega-menu')
+<body class="demo1 kt-sidebar-fixed kt-header-fixed flex h-full bg-background text-base text-foreground antialiased">
+    <livewire:shared.theme-toggle />
+
+    <!-- Page -->
+    <!-- Main -->
+    <div class="flex grow">
+        <livewire:demo1.sidebar />
+
+        <!-- Wrapper -->
+        <div class="kt-wrapper flex grow flex-col">
+            @persist('mega-menu')
                 <livewire:demo1.header />
-                @endpersist
+            @endpersist
 
-                <!-- Content -->
-                <main class="grow pt-5" id="content" role="content">
-                    {{ $slot }}
-                </main>
-                <!-- End of Content -->
+            <!-- Content -->
+            <main class="grow pt-5" id="content" role="content">
+                @yield('content')
+            </main>
+            <!-- End of Content -->
 
-                <livewire:demo1.footer />
-            </div>
-            <!-- End of Wrapper -->
+            <livewire:demo1.footer />
         </div>
-        <!-- End of Main -->
-        <!-- End of Page -->
+        <!-- End of Wrapper -->
+    </div>
+    <!-- End of Main -->
+    <!-- End of Page -->
 
-        @include('layouts.partials.scripts')
-        @livewireScripts
-    </body>
+    @include('layouts.partials.scripts')
+    @livewireScripts
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+
 </html>

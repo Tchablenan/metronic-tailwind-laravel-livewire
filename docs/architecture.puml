@@ -1,0 +1,44 @@
+@startuml
+skinparam componentStyle rectangle
+
+actor "User (Browser)" as Browser
+
+package "Frontend Tooling" {
+  [Vite] as Vite
+  [Tailwind & Alpine] as FrontendLibs
+}
+
+package "Static Templates" {
+  [Metronic HTML templates] as Metronic
+}
+
+package "Laravel App (PHP 8.2)" {
+  node "HTTP Layer\n(routes/web.php)" as HTTP
+  component "Controllers" as Controllers
+  component "Livewire Components\n(app/Http/Livewire)" as Livewire
+  component "Models / Eloquent" as Models
+  component "Providers / Services" as Providers
+}
+
+database "Database (MySQL/Postgres/SQLite)" as DB
+
+component "Public / Assets (public/)" as Public
+
+package "CI / Tests" {
+  [PHPUnit / Pipelines] as CI
+}
+
+Browser -> Vite : Requests dev assets (vite dev)
+Browser -> Public : Loads compiled assets (prod)
+Browser -> HTTP : HTTP requests (Blade pages / Livewire)
+HTTP -> Controllers : Route handling
+Controllers -> Livewire : Mount components / delegate
+Livewire -> Models : Read / Write
+Controllers -> Models : Read / Write
+Models -> DB : Queries
+Vite -> Public : Build -> outputs to `public/` (assets)
+Metronic -> Controllers : Templates to adapt (integration)
+CI -> Vite : run build
+CI -> PHPUnit : run tests
+
+@enduml

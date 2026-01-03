@@ -1,0 +1,303 @@
+@extends('layouts.demo1.base')
+
+@section('content')
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4 pb-8">
+        <a href="{{ route('appointments.show', $appointment) }}"
+           class="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors">
+            <i class="ki-filled ki-left text-xl text-gray-600"></i>
+        </a>
+        <div class="flex flex-col gap-1">
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+                Modifier le Rendez-vous
+            </h1>
+            <p class="text-sm text-gray-600">
+                {{ $appointment->patient->full_name }} - {{ $appointment->formatted_date }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Erreurs de validation -->
+    @if ($errors->any())
+        <div class="mb-6 px-4 py-3.5 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <span class="flex items-center gap-2 font-semibold">
+                    <i class="ki-filled ki-information-2 text-red-600"></i>
+                    Erreurs de validation
+                </span>
+            </div>
+            <ul class="list-disc list-inside text-sm space-y-1">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <!-- Alert si RDV en cours ou terminé -->
+    @if(in_array($appointment->status, ['in_progress', 'completed']))
+        <div class="mb-6 px-4 py-3.5 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg">
+            <div class="flex items-center gap-2">
+                <i class="ki-filled ki-information text-yellow-600"></i>
+                <span class="text-sm font-medium">
+                    Ce rendez-vous est {{ $appointment->status === 'in_progress' ? 'en cours' : 'terminé' }}.
+                    Seul le médecin chef peut le modifier.
+                </span>
+            </div>
+        </div>
+    @endif
+
+    <!-- Formulaire -->
+    <div class="bg-white rounded-xl shadow-md">
+        <form method="POST" action="{{ route('appointments.update', $appointment) }}" class="p-7">
+            @csrf
+            @method('PUT')
+
+            <!-- Champ caché pour l'édition -->
+            <input type="hidden" name="appointment_id" id="appointment_id" value="{{ $appointment->id }}">
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Patient -->
+                <div>
+                    <label for="patient_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Patient <span class="text-red-500">*</span>
+                    </label>
+                    <select name="patient_id" id="patient_id" required
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white @error('patient_id') border-red-500 @enderror">
+                        <option value="">Sélectionner un patient</option>
+                        @foreach($patients as $patient)
+                            <option value="{{ $patient->id }}" {{ old('patient_id', $appointment->patient_id) == $patient->id ? 'selected' : '' }}>
+                                {{ $patient->full_name }} - {{ $patient->phone_number }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('patient_id')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Médecin -->
+                <div>
+                    <label for="doctor_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Médecin <span class="text-red-500">*</span>
+                    </label>
+                    <select name="doctor_id" id="doctor_id" required
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white @error('doctor_id') border-red-500 @enderror">
+                        <option value="">Sélectionner un médecin</option>
+                        @foreach($doctors as $doctor)
+                            <option value="{{ $doctor->id }}" {{ old('doctor_id', $appointment->doctor_id) == $doctor->id ? 'selected' : '' }}>
+                                Dr. {{ $doctor->full_name }}
+                                @if($doctor->speciality)
+                                    - {{ $doctor->speciality }}
+                                @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('doctor_id')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Type -->
+                <div>
+                    <label for="type" class="block text-sm font-medium text-gray-700 mb-2">
+                        Type de rendez-vous <span class="text-red-500">*</span>
+                    </label>
+                    <select name="type" id="type" required
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white @error('type') border-red-500 @enderror">
+                        @foreach($types as $value => $label)
+                            <option value="{{ $value }}" {{ old('type', $appointment->type) == $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('type')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Date -->
+                <div>
+                    <label for="appointment_date" class="block text-sm font-medium text-gray-700 mb-2">
+                        Date <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date"
+                           name="appointment_date"
+                           id="appointment_date"
+                           value="{{ old('appointment_date', $appointment->appointment_date->format('Y-m-d')) }}"
+                           required
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('appointment_date') border-red-500 @enderror">
+                    @error('appointment_date')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Heure -->
+                <div>
+                    <label for="appointment_time" class="block text-sm font-medium text-gray-700 mb-2">
+                        Heure <span class="text-red-500">*</span>
+                    </label>
+                    <input type="time"
+                           name="appointment_time"
+                           id="appointment_time"
+                           value="{{ old('appointment_time', $appointment->formatted_time) }}"
+                           required
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('appointment_time') border-red-500 @enderror">
+                    @error('appointment_time')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                    <div id="availability-message" class="mt-2 text-xs hidden"></div>
+                </div>
+
+                <!-- Durée -->
+                <div>
+                    <label for="duration" class="block text-sm font-medium text-gray-700 mb-2">
+                        Durée (minutes) <span class="text-red-500">*</span>
+                    </label>
+                    <select name="duration" id="duration" required
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white @error('duration') border-red-500 @enderror">
+                        <option value="15" {{ old('duration', $appointment->duration) == 15 ? 'selected' : '' }}>15 minutes</option>
+                        <option value="30" {{ old('duration', $appointment->duration) == 30 ? 'selected' : '' }}>30 minutes</option>
+                        <option value="45" {{ old('duration', $appointment->duration) == 45 ? 'selected' : '' }}>45 minutes</option>
+                        <option value="60" {{ old('duration', $appointment->duration) == 60 ? 'selected' : '' }}>1 heure</option>
+                        <option value="90" {{ old('duration', $appointment->duration) == 90 ? 'selected' : '' }}>1h30</option>
+                        <option value="120" {{ old('duration', $appointment->duration) == 120 ? 'selected' : '' }}>2 heures</option>
+                    </select>
+                    @error('duration')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Lieu -->
+                <div>
+                    <label for="location" class="block text-sm font-medium text-gray-700 mb-2">
+                        Lieu <span class="text-red-500">*</span>
+                    </label>
+                    <select name="location" id="location" required
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white @error('location') border-red-500 @enderror">
+                        @foreach($locations as $value => $label)
+                            <option value="{{ $value }}" {{ old('location', $appointment->location) == $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('location')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Prix -->
+                <div>
+                    <label for="price" class="block text-sm font-medium text-gray-700 mb-2">
+                        Prix (FCFA)
+                    </label>
+                    <input type="number"
+                           name="price"
+                           id="price"
+                           value="{{ old('price', $appointment->price) }}"
+                           min="0"
+                           step="100"
+                           placeholder="Ex: 25000"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('price') border-red-500 @enderror">
+                    @error('price')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Urgence -->
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox"
+                               name="is_emergency"
+                               id="is_emergency"
+                               value="1"
+                               {{ old('is_emergency', $appointment->is_emergency) ? 'checked' : '' }}
+                               class="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                        <span class="text-sm font-medium text-gray-700">
+                            Marquer comme urgence
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Statut actuel (lecture seule) -->
+                <div class="lg:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Statut actuel
+                    </label>
+                    <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        @php
+                        $statusColors = [
+                            'scheduled' => 'background-color: #dbeafe; color: #1e40af;',
+                            'confirmed' => 'background-color: #d1fae5; color: #065f46;',
+                            'in_progress' => 'background-color: #fef3c7; color: #92400e;',
+                            'completed' => 'background-color: #f3f4f6; color: #374151;',
+                            'cancelled' => 'background-color: #fee2e2; color: #991b1b;',
+                            'no_show' => 'background-color: #fed7aa; color: #9a3412;',
+                        ];
+                        @endphp
+                        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium"
+                              style="{{ $statusColors[$appointment->status] ?? '' }}">
+                            <span class="w-2 h-2 rounded-full"
+                                  style="background-color: {{ $appointment->status === 'confirmed' ? '#059669' : ($appointment->status === 'cancelled' ? '#dc2626' : '#6b7280') }};"></span>
+                            {{ $appointment->status_label }}
+                        </span>
+                        <span class="text-xs text-gray-500 italic">
+                            (Seul le médecin chef peut modifier le statut)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Motif (sur toute la largeur) -->
+                <div class="lg:col-span-2">
+                    <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
+                        Motif de consultation
+                    </label>
+                    <textarea name="reason"
+                              id="reason"
+                              rows="3"
+                              placeholder="Motif du rendez-vous..."
+                              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none @error('reason') border-red-500 @enderror">{{ old('reason', $appointment->reason) }}</textarea>
+                    @error('reason')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Remarques pour le patient (sur toute la largeur) -->
+                <div class="lg:col-span-2">
+                    <label for="patient_notes" class="block text-sm font-medium text-gray-700 mb-2">
+                        Remarques pour le patient
+                    </label>
+                    <textarea name="patient_notes"
+                              id="patient_notes"
+                              rows="2"
+                              placeholder="Instructions ou remarques à communiquer au patient..."
+                              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none @error('patient_notes') border-red-500 @enderror">{{ old('patient_notes', $appointment->patient_notes) }}</textarea>
+                    @error('patient_notes')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+                <a href="{{ route('appointments.show', $appointment) }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i class="ki-filled ki-cross text-sm"></i>
+                    Annuler
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-md active:scale-95 transition-all">
+                    <i class="ki-filled ki-check text-sm"></i>
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script src="{{ asset('js/appointments.js') }}"></script>
+@endpush

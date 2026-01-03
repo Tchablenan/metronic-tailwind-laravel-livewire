@@ -1,0 +1,9 @@
+﻿{
+  "first_name": "Marie",
+  "last_name": "Test",
+  "email": "marie@test.com",
+  "phone_number": "+225070000001",
+  "service_type": "consultation",
+  "message": "Test workflow paiement",
+  "urgency": "high"
+}
