@@ -35,6 +35,9 @@ class ServiceRequest extends Model
         'handled_by',
         'handled_at',
         'internal_notes',
+        // Champs secrétaire
+        'created_by_secretary',
+        'handled_by_secretary',
     ];
 
     protected $casts = [
@@ -43,6 +46,7 @@ class ServiceRequest extends Model
         'paid_at' => 'datetime',              // ✅ AJOUTE
         'sent_to_doctor_at' => 'datetime',    // ✅ AJOUTE
         'sent_to_doctor' => 'boolean',        // ✅ AJOUTE
+        'created_by_secretary' => 'boolean',  // ✅ AJOUTE
         'payment_amount' => 'decimal:2',      // ✅ AJOUTE
     ];
 
@@ -76,6 +80,14 @@ class ServiceRequest extends Model
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sent_by');
+    }
+
+    /**
+     * Secrétaire qui a créé la demande (✅ AJOUTE)
+     */
+    public function creatingSecretary(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'handled_by_secretary');
     }
 
     /**
