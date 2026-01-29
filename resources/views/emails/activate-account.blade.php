@@ -102,9 +102,9 @@
         <!-- Content -->
         <div class="content">
             <h2 style="color: #1075B9;">Bienvenue, {{ $patient->first_name }}!</h2>
-            
+
             <p>Votre compte utilisateur a été créé avec succès dans le système <strong>CMO VISTAMD</strong>.</p>
-            
+
             <p>Un rendez-vous vous a également été programmé. Voici les détails:</p>
 
             <!-- Appointment Details -->

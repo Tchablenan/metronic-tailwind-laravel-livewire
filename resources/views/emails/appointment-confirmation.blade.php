@@ -108,7 +108,7 @@
         <!-- Content -->
         <div class="content">
             <h2>Bonjour {{ $patient->first_name }},</h2>
-            
+
             <p>Votre rendez-vous a bien été confirmé dans notre système. Voici les détails de votre consultation:</p>
 
             <!-- Appointment Details -->
