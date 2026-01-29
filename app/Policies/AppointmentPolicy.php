@@ -9,34 +9,55 @@ class AppointmentPolicy
 {
     /**
      * Voir la liste des rendez-vous
+     *
+     * Note : Cette méthode autorise l'accès à la page de liste.
+     * Le filtrage des RDV visibles se fait dans le Controller.
      */
     public function viewAny(User $user): bool
     {
-        // Tous les rôles sauf partner
-        return in_array($user->role, ['doctor', 'nurse', 'secretary', 'patient', 'home_care_member']);
+        // Les médecins (chef + réguliers), secrétaires et infirmiers peuvent voir la liste
+        // Le filtrage selon le rôle se fait dans AppointmentController@index
+        return in_array($user->role, ['doctor', 'secretary', 'nurse', 'patient', 'home_care_member']);
     }
 
     /**
      * Voir un rendez-vous spécifique
+     *
+     * Permissions :
+     * - Médecin chef : Voit TOUS les RDV
+     * - Médecin régulier : Voit UNIQUEMENT ses RDV
+     * - Infirmier : Voit ses RDV assignés
+     * - Patient : Voit son RDV
+     * - Secrétaire : Voit TOUS les RDV
      */
     public function view(User $user, Appointment $appointment): bool
     {
-        // Doctor et secretary peuvent voir tous les rendez-vous
-        if (in_array($user->role, ['doctor', 'secretary'])) {
+        // ✅ Médecin chef peut voir TOUS les rendez-vous (supervision globale)
+        if ($user->isChief()) {
             return true;
         }
 
-        // Patient ne peut voir que ses propres rendez-vous
-        if ($user->role === 'patient') {
-            return $appointment->patient_id === $user->id;
+        // ✅ Médecin régulier peut voir UNIQUEMENT ses propres RDV
+        if ($user->role === 'doctor' && $appointment->doctor_id === $user->id) {
+            return true;
         }
 
-        // Nurse et home_care_member peuvent voir les rendez-vous où ils sont assignés
-        if (in_array($user->role, ['nurse', 'home_care_member'])) {
-            return $appointment->doctor_id === $user->id
-                || $appointment->nurse_id === $user->id;
+        // ✅ Infirmier peut voir les RDV où il est assigné
+        if ($user->role === 'nurse' && $appointment->nurse_id === $user->id) {
+            return true;
         }
 
+        // ✅ Patient peut voir son propre rendez-vous
+        if ($user->role === 'patient' && $appointment->patient_id === $user->id) {
+            return true;
+        }
+
+        // ✅ Secrétaire peut voir tous les rendez-vous (gestion administrative)
+        if ($user->role === 'secretary') {
+            return true;
+        }
+
+        // ❌ Tous les autres cas : accès refusé
         return false;
     }
 
@@ -47,39 +68,63 @@ class AppointmentPolicy
     {
 
 
-        return in_array($user->role, ['doctor', 'secretary', 'nurse','patient']);
+        return in_array($user->role, ['doctor', 'secretary', 'nurse', 'patient']);
     }
 
     /**
      * Modifier un rendez-vous
+     *
+     * Permissions :
+     * - Médecin chef : Modifie TOUS les RDV
+     * - Médecin régulier : Modifie UNIQUEMENT ses RDV
+     * - Patient : Modifie son RDV (si modifiable)
      */
     public function update(User $user, Appointment $appointment): bool
     {
-        // Doctor et secretary peuvent modifier tous les rendez-vous
-        if (in_array($user->role, ['doctor', 'secretary'])) {
+        // ✅ Le médecin chef peut modifier TOUS les rendez-vous
+        if ($user->isChief()) {
             return true;
         }
 
-        // Nurse peut modifier les rendez-vous où il est assigné
-        if ($user->role === 'nurse') {
-            return $appointment->nurse_id === $user->id;
+        // ✅ Un médecin régulier peut modifier UNIQUEMENT ses propres RDV
+        if ($user->role === 'doctor' && $appointment->doctor_id === $user->id) {
+            return $appointment->canBeModified();
         }
 
-        // Patient peut modifier (annuler) ses propres rendez-vous
-        if ($user->role === 'patient') {
-            return $appointment->patient_id === $user->id
-                && $appointment->canBeModified();
+        // ✅ Un patient peut modifier son propre rendez-vous (avec restrictions)
+        if ($user->role === 'patient' && $appointment->patient_id === $user->id) {
+            return $appointment->canBeModified();
         }
 
+        // ❌ Tous les autres rôles ne peuvent PAS modifier
         return false;
     }
-
     /**
-     * Supprimer un rendez-vous
+     * Supprimer/Annuler un rendez-vous
+     *
+     * Permissions :
+     * - Médecin chef : Supprime TOUS les RDV
+     * - Médecin régulier : Supprime UNIQUEMENT ses RDV
+     * - Secrétaire : Supprime les RDV (si annulables)
      */
     public function delete(User $user, Appointment $appointment): bool
     {
-        // Seuls doctor et secretary peuvent supprimer
-        return in_array($user->role, ['doctor', 'secretary']);
+        // ✅ Médecin chef peut supprimer tous les rendez-vous
+        if ($user->isChief()) {
+            return true;
+        }
+
+        // ✅ Médecin régulier peut supprimer UNIQUEMENT ses propres RDV
+        if ($user->role === 'doctor' && $appointment->doctor_id === $user->id) {
+            return $appointment->canBeCancelled();
+        }
+
+        // ✅ Secrétaire peut supprimer les rendez-vous (si annulables)
+        if ($user->role === 'secretary') {
+            return $appointment->canBeCancelled();
+        }
+
+        // ❌ Autres rôles ne peuvent pas supprimer
+        return false;
     }
 }

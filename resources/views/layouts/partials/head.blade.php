@@ -1,8 +1,9 @@
-<title>CMO-Vistamd-app</title>
+<title>{{ config('app.name', 'CMO-Vistamd') }}</title>
 <meta charset="utf-8" />
 <meta content="follow, index" name="robots" />
 <link href="{{ url(request()->path()) }}" rel="canonical" />
 <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
+<meta name="csrf-token" content="{{ csrf_token() }}" />
 <meta content="" name="description" />
 <meta content="@keenthemes" name="twitter:site" />
 <meta content="@keenthemes" name="twitter:creator" />
@@ -25,3 +26,6 @@
 <link href="{{ asset('assets/vendors/apexcharts/apexcharts.css') }}" rel="stylesheet" />
 <link href="{{ asset('assets/vendors/keenicons/styles.bundle.css') }}" rel="stylesheet" />
 <link href="{{ asset('assets/css/styles.css') }}" rel="stylesheet" />
+
+<!-- Vite: CSS + JS (charger EN PREMIER) -->
+@vite(['resources/css/app.css', 'resources/js/app.js'])

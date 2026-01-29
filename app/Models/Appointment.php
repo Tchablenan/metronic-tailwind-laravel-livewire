@@ -18,7 +18,6 @@ class Appointment extends Model
         //'service_request_id',
         'appointment_date',
         'appointment_time',
-      'duration' => 'integer',
         'duration',
         'type',
         'status',

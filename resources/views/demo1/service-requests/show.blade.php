@@ -1,588 +1,501 @@
 @extends('layouts.demo1.base')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    <!-- Breadcrumb + Bouton retour -->
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-            <a href="{{ route('service-requests.index') }}"
-               class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 hover:shadow-sm transition-all">
-                <i class="ki-filled ki-left text-gray-700"></i>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Header avec breadcrumb -->
+    <div class="mb-6">
+        <nav class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+            <a href="{{ route('service-requests.index') }}" class="hover:text-gray-900">
+                Demandes
             </a>
+            <i class="ki-filled ki-right text-xs"></i>
+            <span class="text-gray-900 font-medium">Demande #{{ $serviceRequest->id }}</span>
+        </nav>
+
+        <div class="flex items-start justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
-                    Demande #{{ $serviceRequest->id }}
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Demande de {{ $serviceRequest->full_name }}
                 </h1>
-                <p class="text-sm text-gray-600 font-medium">
+                <p class="text-sm text-gray-600 mt-1">
                     Reçue le {{ $serviceRequest->created_at->format('d/m/Y à H:i') }}
                 </p>
             </div>
-        </div>
 
-        <!-- Badges statut + paiement -->
-        <div class="flex items-center gap-3">
-            @php
-            $statusConfig = [
-                'pending' => ['bg' => 'bg-orange-50', 'text' => 'text-orange-700', 'border' => 'border-orange-200', 'icon' => 'ki-time'],
-                'contacted' => ['bg' => 'bg-purple-50', 'text' => 'text-purple-700', 'border' => 'border-purple-200', 'icon' => 'ki-phone'],
-                'converted' => ['bg' => 'bg-green-50', 'text' => 'text-green-700', 'border' => 'border-green-200', 'icon' => 'ki-check-circle'],
-                'rejected' => ['bg' => 'bg-red-50', 'text' => 'text-red-700', 'border' => 'border-red-200', 'icon' => 'ki-cross-circle'],
-                'cancelled' => ['bg' => 'bg-gray-50', 'text' => 'text-gray-700', 'border' => 'border-gray-200', 'icon' => 'ki-cross'],
-            ];
-            $config = $statusConfig[$serviceRequest->status] ?? $statusConfig['pending'];
-
-            $paymentConfig = [
-                'unpaid' => ['bg' => 'bg-red-50', 'text' => 'text-red-700', 'border' => 'border-red-200', 'icon' => 'ki-cross-circle'],
-                'paid' => ['bg' => 'bg-green-50', 'text' => 'text-green-700', 'border' => 'border-green-200', 'icon' => 'ki-check-circle'],
-                'refunded' => ['bg' => 'bg-gray-50', 'text' => 'text-gray-700', 'border' => 'border-gray-200', 'icon' => 'ki-arrow-left'],
-            ];
-            $payConfig = $paymentConfig[$serviceRequest->payment_status] ?? $paymentConfig['unpaid'];
-            @endphp
-
-            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border {{ $config['bg'] }} {{ $config['text'] }} {{ $config['border'] }}">
-                <i class="ki-filled {{ $config['icon'] }}"></i>
-                @switch($serviceRequest->status)
-                    @case('pending') En attente @break
-                    @case('contacted') Contacté @break
-                    @case('converted') Converti en RDV @break
-                    @case('rejected') Rejeté @break
-                    @case('cancelled') Annulé @break
-                    @default {{ $serviceRequest->status }}
-                @endswitch
-            </span>
-
-            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border {{ $payConfig['bg'] }} {{ $payConfig['text'] }} {{ $payConfig['border'] }}">
-                <i class="ki-filled {{ $payConfig['icon'] }}"></i>
-                {{ $serviceRequest->payment_status_label }}
-            </span>
-
-            @if($serviceRequest->sent_to_doctor)
-            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border bg-blue-50 text-blue-700 border-blue-200">
-                <i class="ki-filled ki-send"></i>
-                Envoyé au médecin
-            </span>
-            @endif
+            <!-- Badges de statut -->
+            <div class="flex flex-col items-end gap-2">
+                @php
+                $statusStyles = [
+                    'pending' => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                    'contacted' => 'bg-purple-50 text-purple-700 border-purple-200',
+                    'converted' => 'bg-green-50 text-green-700 border-green-200',
+                    'rejected' => 'bg-red-50 text-red-700 border-red-200',
+                ];
+                $urgencyStyles = [
+                    'low' => 'bg-green-50 text-green-700 border-green-200',
+                    'medium' => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                    'high' => 'bg-red-50 text-red-700 border-red-200',
+                ];
+                @endphp
+                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border {{ $statusStyles[$serviceRequest->status] ?? 'bg-gray-50 text-gray-700' }}">
+                    <span class="w-2 h-2 rounded-full bg-current"></span>
+                    @switch($serviceRequest->status)
+                        @case('pending') En attente @break
+                        @case('contacted') Contacté @break
+                        @case('converted') Converti en RDV @break
+                        @case('rejected') Rejeté @break
+                        @default {{ $serviceRequest->status }}
+                    @endswitch
+                </span>
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border {{ $urgencyStyles[$serviceRequest->urgency] ?? 'bg-gray-50 text-gray-700' }}">
+                    @if($serviceRequest->urgency === 'high') 🔴 Urgence élevée
+                    @elseif($serviceRequest->urgency === 'medium') 🟡 Urgence moyenne
+                    @else 🟢 Urgence faible
+                    @endif
+                </span>
+            </div>
         </div>
     </div>
 
     <!-- Messages flash -->
     @if (session('success'))
-        <div class="mb-4 px-4 py-3.5 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-800 rounded-lg shadow-sm">
-            <div class="flex items-center justify-between">
-                <span class="flex items-center gap-2.5 font-medium">
-                    <i class="ki-filled ki-check-circle text-green-600"></i>
-                    {{ session('success') }}
-                </span>
-                <button onclick="this.parentElement.parentElement.remove()"
-                        class="text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full p-1 transition-all">
-                    <i class="ki-filled ki-cross"></i>
-                </button>
-            </div>
+    <div class="mb-6 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+        <div class="flex items-center justify-between">
+            <span class="flex items-center gap-2 text-sm font-medium">
+                <i class="ki-filled ki-check-circle text-green-600"></i>
+                {{ session('success') }}
+            </span>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-green-600 hover:text-green-800 p-1">
+                <i class="ki-filled ki-cross text-xs"></i>
+            </button>
         </div>
+    </div>
     @endif
 
     @if (session('error'))
-        <div class="mb-4 px-4 py-3.5 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-800 rounded-lg shadow-sm">
-            <div class="flex items-center justify-between">
-                <span class="flex items-center gap-2.5 font-medium">
-                    <i class="ki-filled ki-cross-circle text-red-600"></i>
-                    {{ session('error') }}
-                </span>
-                <button onclick="this.parentElement.parentElement.remove()"
-                        class="text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full p-1 transition-all">
-                    <i class="ki-filled ki-cross"></i>
-                </button>
-            </div>
+    <div class="mb-6 px-4 py-3 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+        <div class="flex items-center justify-between">
+            <span class="flex items-center gap-2 text-sm font-medium">
+                <i class="ki-filled ki-cross-circle text-red-600"></i>
+                {{ session('error') }}
+            </span>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-red-600 hover:text-red-800 p-1">
+                <i class="ki-filled ki-cross text-xs"></i>
+            </button>
         </div>
+    </div>
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Colonne principale -->
-        <div class="lg:col-span-2 space-y-4">
+
+        <!-- Colonne principale (2/3) -->
+        <div class="lg:col-span-2 space-y-6">
 
             <!-- Informations du demandeur -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="px-4 py-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-500">
-                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <i class="ki-filled ki-profile-circle text-blue-600"></i>
-                        Informations du demandeur
-                    </h3>
-                </div>
-                <div class="p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Nom complet
-                            </label>
-                            <p class="text-base font-semibold text-gray-900">
-                                {{ $serviceRequest->full_name }}
-                            </p>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Email
-                            </label>
-                            <a href="mailto:{{ $serviceRequest->email }}"
-                               class="text-base font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1.5">
-                                <i class="ki-filled ki-sms text-sm"></i>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="ki-filled ki-profile-user text-blue-600"></i>
+                    Informations du demandeur
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-medium text-gray-600 uppercase">Nom complet</label>
+                        <p class="text-sm text-gray-900 font-medium mt-1">{{ $serviceRequest->full_name }}</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-600 uppercase">Email</label>
+                        <p class="text-sm text-gray-900 mt-1">
+                            <a href="mailto:{{ $serviceRequest->email }}" class="text-blue-600 hover:underline">
                                 {{ $serviceRequest->email }}
                             </a>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Téléphone
-                            </label>
-                            <a href="tel:{{ $serviceRequest->phone_number }}"
-                               class="text-base font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1.5">
-                                <i class="ki-filled ki-phone text-sm"></i>
+                        </p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-600 uppercase">Téléphone</label>
+                        <p class="text-sm text-gray-900 mt-1">
+                            <a href="tel:{{ $serviceRequest->phone_number }}" class="text-blue-600 hover:underline">
                                 {{ $serviceRequest->phone_number }}
                             </a>
-                        </div>
-                        @if($serviceRequest->patient)
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Patient lié
-                            </label>
-                            <a href="{{ route('users.show', $serviceRequest->patient) }}"
-                               class="text-base font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1.5">
-                                <i class="ki-filled ki-user text-sm"></i>
-                                Voir le profil patient
-                            </a>
-                        </div>
-                        @endif
+                        </p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-600 uppercase">Type de service</label>
+                        <p class="text-sm text-gray-900 mt-1">
+                            @switch($serviceRequest->service_type)
+                                @case('appointment') 📅 Rendez-vous médical @break
+                                @case('home_visit') 🏠 Visite à domicile @break
+                                @case('emergency') 🚨 Urgence @break
+                                @case('transport') 🚑 Transport médicalisé @break
+                                @case('consultation') 🩺 Consultation @break
+                                @default {{ $serviceRequest->service_type }}
+                            @endswitch
+                        </p>
                     </div>
                 </div>
             </div>
 
             <!-- Détails de la demande -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="px-4 py-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
-                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <i class="ki-filled ki-document text-purple-600"></i>
-                        Détails de la demande
-                    </h3>
-                </div>
-                <div class="p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Type de service
-                            </label>
-                            @php
-                            $serviceColors = [
-                                'appointment' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                'home_visit' => 'bg-orange-50 text-orange-700 border-orange-200',
-                                'emergency' => 'bg-red-50 text-red-700 border-red-200',
-                                'transport' => 'bg-purple-50 text-purple-700 border-purple-200',
-                                'consultation' => 'bg-cyan-50 text-cyan-700 border-cyan-200',
-                                'other' => 'bg-gray-50 text-gray-700 border-gray-200',
-                            ];
-                            @endphp
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border {{ $serviceColors[$serviceRequest->service_type] ?? 'bg-gray-50 text-gray-700 border-gray-200' }}">
-                                @switch($serviceRequest->service_type)
-                                    @case('appointment') Rendez-vous médical @break
-                                    @case('home_visit') Visite à domicile @break
-                                    @case('emergency') Urgence @break
-                                    @case('transport') Transport médicalisé @break
-                                    @case('consultation') Consultation @break
-                                    @case('other') Autre service @break
-                                    @default {{ $serviceRequest->service_type }}
-                                @endswitch
-                            </span>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Niveau d'urgence
-                            </label>
-                            @php
-                            $urgencyColors = [
-                                'low' => 'bg-green-50 text-green-700 border-green-200',
-                                'medium' => 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                'high' => 'bg-red-50 text-red-700 border-red-200',
-                            ];
-                            @endphp
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border {{ $urgencyColors[$serviceRequest->urgency] ?? 'bg-gray-50 text-gray-700 border-gray-200' }}">
-                                @switch($serviceRequest->urgency)
-                                    @case('low') Faible @break
-                                    @case('medium') Moyenne @break
-                                    @case('high') Élevée @break
-                                    @default {{ $serviceRequest->urgency }}
-                                @endswitch
-                            </span>
-                        </div>
-                        @if($serviceRequest->preferred_date)
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Date souhaitée
-                            </label>
-                            <p class="text-base font-medium text-gray-900 flex items-center gap-1.5">
-                                <i class="ki-filled ki-calendar text-gray-400"></i>
-                                {{ \Carbon\Carbon::parse($serviceRequest->preferred_date)->format('d/m/Y') }}
-                            </p>
-                        </div>
-                        @endif
-                        @if($serviceRequest->preferred_time)
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Heure souhaitée
-                            </label>
-                            <p class="text-base font-medium text-gray-900 flex items-center gap-1.5">
-                                <i class="ki-filled ki-time text-gray-400"></i>
-                                {{ \Carbon\Carbon::parse($serviceRequest->preferred_time)->format('H:i') }}
-                            </p>
-                        </div>
-                        @endif
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="ki-filled ki-document text-blue-600"></i>
+                    Détails de la demande
+                </h2>
+                <div class="space-y-4">
+                    @if($serviceRequest->preferred_date)
+                    <div>
+                        <label class="text-xs font-medium text-gray-600 uppercase">Date souhaitée</label>
+                        <p class="text-sm text-gray-900 mt-1">
+                            {{ $serviceRequest->preferred_date->format('d/m/Y') }}
+                            @if($serviceRequest->preferred_time)
+                                à {{ \Carbon\Carbon::parse($serviceRequest->preferred_time)->format('H:i') }}
+                            @endif
+                        </p>
                     </div>
+                    @endif
 
                     @if($serviceRequest->message)
                     <div>
-                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
-                            Message / Préoccupation
-                        </label>
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ $serviceRequest->message }}</p>
-                        </div>
+                        <label class="text-xs font-medium text-gray-600 uppercase">Message</label>
+                        <p class="text-sm text-gray-900 mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            {{ $serviceRequest->message }}
+                        </p>
                     </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Section PAIEMENT (NOUVELLE) -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="px-4 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-500">
-                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <i class="ki-filled ki-dollar text-green-600"></i>
-                        Informations de paiement
-                    </h3>
-                </div>
-                <div class="p-4">
-                    @if($serviceRequest->payment_status === 'paid')
-                        <!-- Paiement déjà effectué -->
-                        <div class="bg-green-50 border-2 border-green-200 rounded-xl p-6 mb-4">
-                            <div class="flex items-start gap-4">
-                                <div class="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                    <i class="ki-filled ki-check text-3xl text-white"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-lg font-bold text-green-900 mb-2">Paiement effectué ✓</p>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p class="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Montant</p>
-                                            <p class="text-2xl font-bold text-green-900">{{ number_format($serviceRequest->payment_amount, 0, ',', ' ') }} FCFA</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Méthode</p>
-                                            <p class="text-base font-semibold text-green-900">{{ $serviceRequest->payment_method_label }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Payé le</p>
-                                            <p class="text-sm text-green-800">{{ $serviceRequest->paid_at->format('d/m/Y à H:i') }}</p>
-                                        </div>
-                                    </div>
-                                </div>
+            <!-- Informations de paiement -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="ki-filled ki-dollar text-green-600"></i>
+                    Informations de paiement
+                </h2>
+
+                @if($serviceRequest->payment_status === 'paid')
+                    <!-- Paiement effectué -->
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                <i class="ki-filled ki-check-circle text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-green-900">Paiement confirmé</p>
+                                <p class="text-xs text-green-700">Montant : {{ number_format($serviceRequest->payment_amount, 0, ',', ' ') }} FCFA</p>
                             </div>
                         </div>
-                    @else
-                        <!-- Formulaire d'enregistrement du paiement -->
-                        <div class="bg-orange-50 border-2 border-orange-200 rounded-xl p-6 mb-6">
-                            <div class="flex items-start gap-3 mb-4">
-                                <i class="ki-filled ki-information-2 text-2xl text-orange-600"></i>
-                                <div>
-                                    <p class="font-semibold text-orange-900 mb-1">Paiement requis</p>
-                                    <p class="text-sm text-orange-800">Le patient doit effectuer le paiement avant que la demande ne soit envoyée au médecin chef.</p>
-                                </div>
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                                <span class="text-gray-600">Méthode :</span>
+                                <span class="font-medium text-gray-900">
+                                    @switch($serviceRequest->payment_method)
+                                        @case('cash') Espèces @break
+                                        @case('mobile_money') Mobile Money @break
+                                        @case('card') Carte bancaire @break
+                                        @case('insurance') Assurance @break
+                                        @default {{ $serviceRequest->payment_method }}
+                                    @endswitch
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Date :</span>
+                                <span class="font-medium text-gray-900">{{ $serviceRequest->paid_at->format('d/m/Y H:i') }}</span>
                             </div>
                         </div>
 
-                        <form action="{{ route('secretary.service-requests.mark-paid', $serviceRequest) }}" method="POST" class="space-y-4">
-                            @csrf
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-sm font-semibold text-gray-700 mb-2 block">
-                                        Montant payé (FCFA) *
-                                    </label>
-                                    <input type="number"
-                                           name="payment_amount"
-                                           step="0.01"
-                                           min="0"
-                                           required
-                                           placeholder="Ex: 25000"
-                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base font-semibold">
-                                    @error('payment_amount')
-                                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <div>
-                                    <label class="text-sm font-semibold text-gray-700 mb-2 block">
-                                        Méthode de paiement *
-                                    </label>
-                                    <select name="payment_method"
-                                            required
-                                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base font-semibold cursor-pointer">
-                                        <option value="">Sélectionner...</option>
-                                        <option value="cash">💵 Espèces</option>
-                                        <option value="mobile_money">📱 Mobile Money</option>
-                                        <option value="card">💳 Carte bancaire</option>
-                                        <option value="insurance">🏥 Assurance</option>
-                                    </select>
-                                    @error('payment_method')
-                                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
+                        @if($serviceRequest->sent_to_doctor)
+                        <div class="mt-3 pt-3 border-t border-green-300">
+                            <div class="flex items-center gap-2 text-sm">
+                                <i class="ki-filled ki-send text-blue-600"></i>
+                                <span class="text-gray-700">
+                                    Envoyé au médecin chef le {{ $serviceRequest->sent_to_doctor_at->format('d/m/Y à H:i') }}
+                                    @if($serviceRequest->sender)
+                                        par {{ $serviceRequest->sender->full_name }}
+                                    @endif
+                                </span>
                             </div>
+                        </div>
+                        @endif
+                    </div>
 
-                            <button type="submit"
-                                    class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-green-500 text-white text-base font-bold rounded-lg hover:bg-green-700 hover:shadow-lg active:scale-95 transition-all">
-                                <i class="ki-filled ki-check-circle text-xl"></i>
-                                Confirmer le paiement
-                            </button>
-                        </form>
+                    @if(Auth::user()->role === 'secretary' && !$serviceRequest->sent_to_doctor && !in_array($serviceRequest->status, ['converted', 'rejected']))
+                    <!-- Bouton envoyer au médecin -->
+                    <form action="{{ route('secretary.service-requests.send-to-doctor', $serviceRequest) }}" method="POST" class="mt-4">
+                        @csrf
+                        <button type="submit"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all animate-pulse">
+                            <i class="ki-filled ki-send"></i>
+                            Envoyer au médecin chef
+                        </button>
+                    </form>
                     @endif
-                </div>
+
+                    @if(Auth::user()->role === 'secretary' && $serviceRequest->sent_to_doctor && $serviceRequest->status === 'contacted')
+                    <!-- Bouton annuler l'envoi -->
+                    <form action="{{ route('secretary.service-requests.cancel-send', $serviceRequest) }}" method="POST" class="mt-4">
+                        @csrf
+                        <button type="submit"
+                                onclick="return confirm('Êtes-vous sûr de vouloir annuler l\'envoi au médecin ?')"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-lg hover:bg-yellow-200 border border-yellow-300">
+                            <i class="ki-filled ki-cross-circle"></i>
+                            Annuler l'envoi au médecin
+                        </button>
+                    </form>
+                    @endif
+
+                @else
+                    <!-- Paiement non effectué -->
+                    @if(Auth::user()->role === 'secretary')
+                    <div class="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                                <i class="ki-filled ki-cross-circle text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-red-900">Paiement non effectué</p>
+                                <p class="text-xs text-red-700">Veuillez enregistrer le paiement ci-dessous</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire de paiement (SECRÉTAIRE) -->
+                    <form action="{{ route('secretary.service-requests.mark-paid', $serviceRequest) }}" method="POST" class="space-y-4">
+                        @csrf
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Montant payé (FCFA) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number"
+                                   name="payment_amount"
+                                   min="0"
+                                   step="100"
+                                   required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                   placeholder="25000">
+                            @error('payment_amount')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Méthode de paiement <span class="text-red-500">*</span>
+                            </label>
+                            <select name="payment_method"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">Sélectionner...</option>
+                                <option value="cash">Espèces</option>
+                                <option value="mobile_money">Mobile Money</option>
+                                <option value="card">Carte bancaire</option>
+                                <option value="insurance">Assurance</option>
+                            </select>
+                            @error('payment_method')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <button type="submit"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 shadow-md hover:shadow-lg transition-all">
+                            <i class="ki-filled ki-check-circle"></i>
+                            Confirmer le paiement
+                        </button>
+                    </form>
+                    @else
+                    <!-- Vue médecin : paiement non effectué -->
+                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="text-sm text-yellow-800">
+                            <i class="ki-filled ki-information text-yellow-600"></i>
+                            Cette demande n'a pas encore été payée. La secrétaire doit d'abord enregistrer le paiement.
+                        </p>
+                    </div>
+                    @endif
+                @endif
             </div>
 
             <!-- Notes internes -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="px-6 py-4 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100">
-                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <i class="ki-filled ki-note-2 text-amber-600"></i>
-                        Notes internes
-                    </h3>
-                </div>
-                <div class="p-6">
-                    @if($serviceRequest->internal_notes)
-                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-                            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ $serviceRequest->internal_notes }}</p>
-                        </div>
-                    @else
-                        <p class="text-sm text-gray-500 italic mb-4">Aucune note interne pour le moment</p>
-                    @endif
-
-                    <!-- Formulaire ajout de notes -->
-                    <form action="{{ route('service-requests.notes', $serviceRequest) }}" method="POST">
-                        @csrf
-                        <textarea
-                            name="internal_notes"
-                            rows="3"
-                            placeholder="Ajouter ou modifier les notes internes..."
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm resize-none"
-                        >{{ old('internal_notes', $serviceRequest->internal_notes) }}</textarea>
-                        @error('internal_notes')
-                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                        <button type="submit"
-                                class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 hover:shadow-md active:scale-95 transition-all">
-                            <i class="ki-filled ki-check text-sm"></i>
-                            Enregistrer les notes
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Rendez-vous créé (si converti) -->
-            @if($serviceRequest->appointment)
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100">
-                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <i class="ki-filled ki-calendar-tick text-green-600"></i>
-                        Rendez-vous créé
-                    </h3>
-                </div>
-                <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Date du RDV
-                            </label>
-                            <p class="text-base font-medium text-gray-900">
-                                {{ $serviceRequest->appointment->formatted_date }}
-                            </p>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Heure
-                            </label>
-                            <p class="text-base font-medium text-gray-900">
-                                {{ $serviceRequest->appointment->formatted_time }}
-                            </p>
-                        </div>
-                        @if($serviceRequest->appointment->doctor)
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Médecin
-                            </label>
-                            <p class="text-base font-medium text-gray-900">
-                                Dr. {{ $serviceRequest->appointment->doctor->full_name }}
-                            </p>
-                        </div>
-                        @endif
-                        <div>
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                                Statut RDV
-                            </label>
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border bg-green-50 text-green-700 border-green-200">
-                                {{ $serviceRequest->appointment->status_label }}
-                            </span>
-                        </div>
-                    </div>
-                    <a href="{{ route('appointments.show', $serviceRequest->appointment) }}"
-                       class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 hover:shadow-md active:scale-95 transition-all">
-                        <i class="ki-filled ki-eye text-sm"></i>
-                        Voir le rendez-vous
-                    </a>
-                </div>
+            @if($serviceRequest->internal_notes)
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="ki-filled ki-note text-purple-600"></i>
+                    Notes internes
+                </h2>
+                <p class="text-sm text-gray-900 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    {{ $serviceRequest->internal_notes }}
+                </p>
             </div>
             @endif
 
         </div>
 
-        <!-- Colonne actions -->
-        <div class="space-y-4">
+        <!-- Colonne latérale (1/3) -->
+        <div class="space-y-6">
 
             <!-- Actions rapides -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="px-4 py-4 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-violet-200">
-                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <i class="ki-filled ki-setting-3 text-secondary-foreground"></i>
-                        Actions
-                    </h3>
-                </div>
-                <div class="p-4 space-y-4">
+<!-- Actions rapides -->
+<div class="bg-white rounded-lg shadow p-6">
+    <h3 class="text-base font-bold text-gray-900 mb-4">Actions</h3>
+    <div class="space-y-3">
 
-                    @if($serviceRequest->status === 'pending' && $serviceRequest->payment_status !== 'paid')
-                        <!-- Marquer comme contacté -->
-                        <form action="{{ route('service-requests.contacted', $serviceRequest) }}" method="POST">
-                            @csrf
-                            <button type="submit"
-                                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-violet-500 text-white text-sm font-medium rounded-lg hover:bg-purple-700 hover:shadow-md active:scale-95 transition-all">
-                                <i class="ki-filled ki-phone"></i>
-                                Marquer comme contacté
+        @if(Auth::user()->role === 'secretary')
+            <!-- Actions secrétaire -->
+            @if($serviceRequest->status === 'pending')
+            <form action="{{ route('service-requests.contacted', $serviceRequest) }}" method="POST">
+                @csrf
+                <button type="submit"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700">
+                    <i class="ki-filled ki-phone"></i>
+                    Marquer comme contacté
+                </button>
+            </form>
+            @endif
+
+        @elseif(Auth::user()->role === 'doctor')
+            <!-- Actions médecin -->
+            @if(!in_array($serviceRequest->status, ['converted', 'rejected']))
+
+            <!-- Convertir en RDV : Rediriger vers appointments.create -->
+            <a href="{{ route('appointments.create', ['service_request_id' => $serviceRequest->id]) }}"
+               class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-700 shadow-md hover:shadow-lg transition-all">
+                <i class="ki-filled ki-calendar-add"></i>
+                Convertir en rendez-vous
+            </a>
+
+            <!-- Rejeter : Formulaire inline simple -->
+            <div>
+                <button type="button"
+                        onclick="document.getElementById('rejectForm').classList.toggle('hidden')"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-lg hover:bg-red-200 border border-red-300">
+                    <i class="ki-filled ki-cross-circle"></i>
+                    Rejeter la demande
+                </button>
+
+                <!-- Formulaire inline caché -->
+                <div id="rejectForm" class="hidden mt-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <form action="{{ route('service-requests.reject', $serviceRequest) }}" method="POST" class="space-y-3">
+                        @csrf
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                Raison du rejet <span class="text-red-500">*</span>
+                            </label>
+                            <textarea name="rejection_reason"
+                                      rows="3"
+                                      required
+                                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                                      placeholder="Expliquez pourquoi cette demande est rejetée..."></textarea>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="button"
+                                    onclick="document.getElementById('rejectForm').classList.add('hidden')"
+                                    class="flex-1 px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                                Annuler
                             </button>
-                        </form>
-                    @endif
-
-                    @if($serviceRequest->payment_status === 'paid' && !$serviceRequest->sent_to_doctor && !$serviceRequest->appointment)
-                        <!-- Envoyer au médecin chef (NOUVELLE ACTION) -->
-                        <form action="{{ route('secretary.service-requests.send-to-doctor', $serviceRequest) }}" method="POST">
-                            @csrf
                             <button type="submit"
-                                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 hover:shadow-md active:scale-95 transition-all animate-pulse">
-                                <i class="ki-filled ki-send"></i>
-                                Envoyer au médecin chef
+                                    class="flex-1 px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+                                <i class="ki-filled ki-cross-circle"></i>
+                                Rejeter
                             </button>
-                        </form>
-                    @endif
-
-                    @if($serviceRequest->sent_to_doctor && !$serviceRequest->appointment && Auth::user()->role === 'secretary')
-                        <!-- Annuler l'envoi (si erreur) -->
-                        <form action="{{ route('secretary.service-requests.cancel-send', $serviceRequest) }}" method="POST">
-                            @csrf
-                            <button type="submit"
-                                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-black text-sm font-medium rounded-lg hover:bg-gray-700 hover:shadow-md active:scale-95 transition-all">
-                                <i class="ki-filled ki-arrow-left"></i>
-                                Annuler l'envoi
-                            </button>
-                        </form>
-                    @endif
-
-                    @if(in_array($serviceRequest->status, ['pending', 'contacted']) && !$serviceRequest->appointment && Auth::user()->role === 'doctor')
-                        <!-- Convertir en RDV (SEULEMENT POUR LE MEDECIN) -->
-                        <button onclick="document.getElementById('convertModal').classList.remove('hidden')"
-                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-700 hover:shadow-md active:scale-95 transition-all">
-                            <i class="ki-filled ki-check-circle"></i>
-                            Convertir en rendez-vous
-                        </button>
-
-                        <!-- Rejeter -->
-                        <button onclick="document.getElementById('rejectModal').classList.remove('hidden')"
-                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 hover:shadow-md active:scale-95 transition-all">
-                            <i class="ki-filled ki-cross-circle"></i>
-                            Rejeter la demande
-                        </button>
-                    @endif
-
-                    <!-- Appeler le patient -->
-                    <a href="tel:{{ $serviceRequest->phone_number }}"
-                       class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-sm font-medium rounded-lg hover:bg-cyan-700 hover:shadow-md active:scale-95 transition-all">
-                        <i class="ki-filled ki-phone"></i>
-                        Appeler le patient
-                    </a>
-
-                    <!-- Envoyer un email -->
-                    <a href="mailto:{{ $serviceRequest->email }}"
-                       class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-mono text-white text-sm font-medium rounded-lg hover:bg-indigo-700 hover:shadow-md active:scale-95 transition-all">
-                        <i class="ki-filled ki-sms"></i>
-                        Envoyer un email
-                    </a>
+                        </div>
+                    </form>
                 </div>
             </div>
+            @endif
+        @endif
 
-            <!-- Traçabilité -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="px-4 py-4 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200">
-                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <i class="ki-filled ki-information text-gray-600"></i>
-                        Traçabilité
-                    </h3>
-                </div>
-                <div class="p-4 space-y-4">
+        <!-- Ajouter des notes (pour tous) -->
+        <div>
+            <button type="button"
+                    onclick="document.getElementById('notesForm').classList.toggle('hidden')"
+                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200">
+                <i class="ki-filled ki-note"></i>
+                {{ $serviceRequest->internal_notes ? 'Modifier les notes' : 'Ajouter des notes' }}
+            </button>
+
+            <!-- Formulaire inline caché -->
+            <div id="notesForm" class="hidden mt-3 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <form action="{{ route('service-requests.notes', $serviceRequest) }}" method="POST" class="space-y-3">
+                    @csrf
+
                     <div>
-                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                            Demande reçue le
-                        </label>
-                        <p class="text-sm text-gray-900 font-medium">
-                            {{ $serviceRequest->created_at->format('d/m/Y à H:i') }}
-                        </p>
+                        <textarea name="internal_notes"
+                                  rows="4"
+                                  required
+                                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                  placeholder="Notes internes visibles par le personnel...">{{ $serviceRequest->internal_notes }}</textarea>
                     </div>
 
-                    @if($serviceRequest->handled_by)
-                    <div>
-                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                            Traitée par
-                        </label>
-                        <p class="text-sm text-gray-900 font-medium">
-                            {{ $serviceRequest->handler->full_name }}
-                        </p>
+                    <div class="flex gap-2">
+                        <button type="button"
+                                onclick="document.getElementById('notesForm').classList.add('hidden')"
+                                class="flex-1 px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Annuler
+                        </button>
+                        <button type="submit"
+                                class="flex-1 px-3 py-2 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">
+                            <i class="ki-filled ki-save"></i>
+                            Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+            <!-- Informations complémentaires -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-base font-bold text-gray-900 mb-4">Informations</h3>
+                <div class="space-y-3 text-sm">
+
+                    @if($serviceRequest->handler)
+                    <div class="flex items-center gap-2 pb-3 border-b border-gray-100">
+                        <i class="ki-filled ki-profile-user text-gray-400"></i>
+                        <div>
+                            <p class="text-xs text-gray-600">Traité par</p>
+                            <p class="text-gray-900 font-medium">{{ $serviceRequest->handler->full_name }}</p>
+                        </div>
                     </div>
                     @endif
 
                     @if($serviceRequest->handled_at)
-                    <div>
-                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                            Traitée le
-                        </label>
-                        <p class="text-sm text-gray-900 font-medium">
-                            {{ $serviceRequest->handled_at->format('d/m/Y à H:i') }}
-                        </p>
+                    <div class="flex items-center gap-2 pb-3 border-b border-gray-100">
+                        <i class="ki-filled ki-time text-gray-400"></i>
+                        <div>
+                            <p class="text-xs text-gray-600">Traité le</p>
+                            <p class="text-gray-900">{{ $serviceRequest->handled_at->format('d/m/Y à H:i') }}</p>
+                        </div>
                     </div>
                     @endif
 
-                    @if($serviceRequest->sent_to_doctor)
-                    <div>
-                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                            Envoyée au médecin le
-                        </label>
-                        <p class="text-sm text-gray-900 font-medium">
-                            {{ $serviceRequest->sent_to_doctor_at->format('d/m/Y à H:i') }}
-                        </p>
-                        @if($serviceRequest->sender)
-                        <p class="text-xs text-gray-600 mt-1">
-                            Par {{ $serviceRequest->sender->full_name }}
-                        </p>
-                        @endif
+                    @if($serviceRequest->appointment)
+                    <div class="flex items-center gap-2 pb-3 border-b border-gray-100">
+                        <i class="ki-filled ki-calendar-tick text-green-500"></i>
+                        <div>
+                            <p class="text-xs text-gray-600">Rendez-vous créé</p>
+                            <a href="{{ route('appointments.show', $serviceRequest->appointment) }}"
+                               class="text-blue-600 hover:underline font-medium">
+                                Voir le RDV #{{ $serviceRequest->appointment->id }}
+                            </a>
+                        </div>
                     </div>
                     @endif
 
-                    <div>
-                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                            Dernière modification
-                        </label>
-                        <p class="text-sm text-gray-900 font-medium">
-                            {{ $serviceRequest->updated_at->format('d/m/Y à H:i') }}
-                        </p>
+                    @if($serviceRequest->patient)
+                    <div class="flex items-center gap-2">
+                        <i class="ki-filled ki-profile-circle text-blue-500"></i>
+                        <div>
+                            <p class="text-xs text-gray-600">Patient lié</p>
+                            <a href="{{ route('users.show', $serviceRequest->patient) }}"
+                               class="text-blue-600 hover:underline font-medium">
+                                {{ $serviceRequest->patient->full_name }}
+                            </a>
+                        </div>
                     </div>
+                    @endif
+
                 </div>
             </div>
 
@@ -590,84 +503,149 @@
     </div>
 </div>
 
-<!-- Modal Convertir en RDV (SEULEMENT POUR MEDECIN) -->
-@if(Auth::user()->role === 'doctor')
+<!-- Modal Convertir en RDV (MÉDECIN) -->
+@if(Auth::user()->role === 'doctor' && !in_array($serviceRequest->status, ['converted', 'rejected']))
 <div id="convertModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
-        <div class="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100">
-            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <i class="ki-filled ki-check-circle text-green-600"></i>
-                Convertir en rendez-vous
-            </h3>
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Convertir en rendez-vous</h3>
+                <button onclick="document.getElementById('convertModal').classList.add('hidden')"
+                        class="text-gray-400 hover:text-gray-600">
+                    <i class="ki-filled ki-cross text-xl"></i>
+                </button>
+            </div>
         </div>
-        <form action="{{ route('service-requests.convert', $serviceRequest) }}" method="POST">
+        <form action="{{ route('service-requests.convert', $serviceRequest) }}" method="POST" class="p-6 space-y-4">
             @csrf
-            <div class="p-6">
-                <p class="text-sm text-gray-600 mb-4">
-                    Cette action va créer un compte patient (si nécessaire) et un rendez-vous.
-                    Le patient recevra un email pour activer son compte.
-                </p>
 
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <p class="text-sm text-blue-800">
-                        <strong>Note :</strong> Vous serez redirigé vers le formulaire de création de rendez-vous avec les informations pré-remplies.
-                    </p>
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p class="text-sm text-blue-800">
+                    <i class="ki-filled ki-information text-blue-600"></i>
+                    Un compte patient sera créé automatiquement si l'email ou le téléphone n'existe pas déjà.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date du rendez-vous</label>
+                    <input type="date"
+                           name="appointment_date"
+                           value="{{ $serviceRequest->preferred_date ? $serviceRequest->preferred_date->format('Y-m-d') : '' }}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Heure</label>
+                    <input type="time"
+                           name="appointment_time"
+                           value="{{ $serviceRequest->preferred_time ? \Carbon\Carbon::parse($serviceRequest->preferred_time)->format('H:i') : '' }}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
-            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Durée (minutes)</label>
+                <select name="duration" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="15">15 minutes</option>
+                    <option value="30" selected>30 minutes</option>
+                    <option value="45">45 minutes</option>
+                    <option value="60">1 heure</option>
+                </select>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
                 <button type="button"
                         onclick="document.getElementById('convertModal').classList.add('hidden')"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
                     Annuler
                 </button>
                 <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-all">
-                    Convertir en RDV
+                        class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
+                    Créer le rendez-vous
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal Rejeter -->
+<!-- Modal Rejeter (MÉDECIN) -->
 <div id="rejectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
-        <div class="px-6 py-4 bg-gradient-to-r from-red-50 to-rose-50 border-b border-red-100">
-            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <i class="ki-filled ki-cross-circle text-red-600"></i>
-                Rejeter la demande
-            </h3>
-        </div>
-        <form action="{{ route('service-requests.reject', $serviceRequest) }}" method="POST">
-            @csrf
-            <div class="p-6">
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">
-                    Raison du rejet *
-                </label>
-                <textarea
-                    name="rejection_reason"
-                    rows="4"
-                    required
-                    placeholder="Expliquez pourquoi cette demande est rejetée..."
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm resize-none"
-                ></textarea>
-                @error('rejection_reason')
-                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                @enderror
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Rejeter la demande</h3>
+                <button onclick="document.getElementById('rejectModal').classList.add('hidden')"
+                        class="text-gray-400 hover:text-gray-600">
+                    <i class="ki-filled ki-cross text-xl"></i>
+                </button>
             </div>
-            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+        </div>
+        <form action="{{ route('service-requests.reject', $serviceRequest) }}" method="POST" class="p-6 space-y-4">
+            @csrf
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Raison du rejet <span class="text-red-500">*</span>
+                </label>
+                <textarea name="rejection_reason"
+                          rows="4"
+                          required
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                          placeholder="Expliquez pourquoi cette demande est rejetée..."></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
                 <button type="button"
                         onclick="document.getElementById('rejectModal').classList.add('hidden')"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
                     Annuler
                 </button>
                 <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all">
-                    Rejeter la demande
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+                    Rejeter
                 </button>
             </div>
         </form>
     </div>
 </div>
 @endif
+
+<!-- Modal Ajouter des notes -->
+<div id="notesModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Ajouter des notes internes</h3>
+                <button onclick="document.getElementById('notesModal').classList.add('hidden')"
+                        class="text-gray-400 hover:text-gray-600">
+                    <i class="ki-filled ki-cross text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <form action="{{ route('service-requests.notes', $serviceRequest) }}" method="POST" class="p-6 space-y-4">
+            @csrf
+
+            <div>
+                <textarea name="internal_notes"
+                          rows="5"
+                          required
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          placeholder="Ajoutez des notes internes visibles uniquement par le personnel...">{{ $serviceRequest->internal_notes }}</textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                <button type="button"
+                        onclick="document.getElementById('notesModal').classList.add('hidden')"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection

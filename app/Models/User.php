@@ -28,6 +28,7 @@ class User extends Authenticatable
         'phone_number',
         'avatar_url',
         'role',
+        'is_chief',
         'speciality',
         'license_number',
         'is_active',
@@ -54,6 +55,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'is_chief' => 'boolean',
         ];
     }
 
@@ -192,6 +194,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Scope: Médecin chef uniquement
+     */
+    public function scopeChief($query)
+    {
+        return $query->where('role', 'doctor')->where('is_chief', true);
+    }
+
+    /**
+     * Scope: Médecins réguliers (hors chef)
+     */
+    public function scopeRegularDoctors($query)
+    {
+        return $query->where('role', 'doctor')->where('is_chief', false);
+    }
+
+    /**
      * ============================================
      * UTILITY METHODS
      * ============================================
@@ -203,7 +221,23 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'doctor';
+        return $this->role === 'doctor' && $this->is_chief === true;
+    }
+
+    /**
+     * Vérifier si l'utilisateur est le médecin chef
+     */
+    public function isChief(): bool
+    {
+        return $this->role === 'doctor' && $this->is_chief === true;
+    }
+
+    /**
+     * Vérifier si l'utilisateur est un médecin régulier (pas le chef)
+     */
+    public function isRegularDoctor(): bool
+    {
+        return $this->role === 'doctor' && $this->is_chief === false;
     }
 
     /**

@@ -5,7 +5,3 @@
 <script src="{{ asset('assets/js/layouts/demo1.js') }}" data-navigate-once></script>
 {{-- Stack pour les scripts personnalisés --}}
 @stack('scripts')
-
-<!-- Compiled App Scripts -->
-@vite(['resources/js/app.js'])
-<!-- End of Scripts -->

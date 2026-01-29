@@ -4,25 +4,43 @@ namespace App\Http\Controllers;
 
 use App\Models\Appointment;
 use App\Models\User;
+use App\Models\ServiceRequest;
+use App\Enums\AppointmentStatus;
+use App\Enums\AppointmentType;
+use App\Services\AppointmentFilterService;
+use App\Services\PatientMatcherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class AppointmentController extends Controller
 {
-
     use AuthorizesRequests;
-    /**
-     * Liste des rendez-vous avec filtres
-     */
 
-        private function getViewPrefix(): string
+    private AppointmentFilterService $filterService;
+    private PatientMatcherService $patientMatcher;
+
+    public function __construct(
+        AppointmentFilterService $filterService,
+        PatientMatcherService $patientMatcher
+    ) {
+        $this->filterService = $filterService;
+        $this->patientMatcher = $patientMatcher;
+    }
+
+    /**
+     * Get view prefix based on user role
+     */
+    private function getViewPrefix(): string
     {
         $role = Auth::user()->role;
 
-        return match($role) {
+        return match ($role) {
             'doctor' => 'demo1.doctor.appointments',
             'secretary' => 'demo1.secretary.appointments',
             'nurse' => 'demo1.nurse.appointments',
@@ -30,83 +48,28 @@ class AppointmentController extends Controller
             default => 'demo1.doctor.appointments',
         };
     }
+
+    /**
+     * List appointments with filters
+     */
     public function index(Request $request)
     {
         $this->authorize('viewAny', Appointment::class);
 
         $query = Appointment::with(['patient', 'doctor', 'nurse']);
 
-        // Filtres
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->whereHas('patient', function($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                      ->orWhere('last_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
-                })
-                ->orWhere('reason', 'like', "%{$search}%");
-            });
-        }
+        // Apply filters
+        $query = $this->filterService->applyFilters($query, $request);
+        $query = $this->filterService->applyRoleBasedFilters($query, Auth::user());
+        $query = $this->filterService->applySorting($query);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        $appointments = $query->paginate(20)->withQueryString();
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
-
-        if ($request->filled('date')) {
-            $query->whereDate('appointment_date', $request->date);
-        }
-
-        if ($request->filled('doctor_id')) {
-            $query->where('doctor_id', $request->doctor_id);
-        }
-
-        if ($request->filled('patient_id')) {
-            $query->where('patient_id', $request->patient_id);
-        }
-
-        // Filtres par rôle
-        $user = Auth::user();
-
-        if ($user->role === 'patient') {
-            $query->where('patient_id', $user->id);
-        }
-
-        if ($user->role === 'nurse' && !$request->filled('show_all')) {
-            $query->where('nurse_id', $user->id);
-        }
-
-        // Tri par défaut
-        $appointments = $query->orderBy('appointment_date', 'desc')
-                             ->orderBy('appointment_time', 'desc')
-                             ->paginate(20)
-                             ->withQueryString();
-
-        // Données pour les filtres
-        $statuses = [
-            'scheduled' => 'Prévu',
-            'confirmed' => 'Confirmé',
-            'in_progress' => 'En cours',
-            'completed' => 'Terminé',
-            'cancelled' => 'Annulé',
-            'no_show' => 'Absent',
-        ];
-
-        $types = [
-            'consultation' => 'Consultation',
-            'followup' => 'Suivi',
-            'exam' => 'Examen',
-            'emergency' => 'Urgence',
-            'vaccination' => 'Vaccination',
-            'home_visit' => 'Visite à domicile',
-            'telehealth' => 'Téléconsultation',
-        ];
-
-        $doctors = User::where('role', 'doctor')->get();
+        $statuses = AppointmentStatus::options();
+        $types = AppointmentType::options();
+        $doctors = User::where('role', 'doctor')
+            ->where('is_chief', false)
+            ->get();
         $patients = User::where('role', 'patient')->get();
 
         $viewPrefix = $this->getViewPrefix();
@@ -120,39 +83,55 @@ class AppointmentController extends Controller
         ));
     }
     /**
-     * Formulaire de création
+     * Show creation form
      */
-    public function create()
+    public function create(Request $request)
     {
         $this->authorize('create', Appointment::class);
 
+        $serviceRequest = null;
+        $patient = null;
+        $patientWarning = null;
+
+        // Load from ServiceRequest if provided
+        if ($request->has('service_request_id')) {
+            $serviceRequest = ServiceRequest::findOrFail($request->service_request_id);
+
+            // Verify doctor has access
+            if (Auth::user()->role === 'doctor') {
+                if ($serviceRequest->payment_status !== 'paid' || !$serviceRequest->sent_to_doctor) {
+                    abort(403, 'Vous n\'avez pas accès à cette demande.');
+                }
+            }
+
+            // Use PatientMatcherService to find or warn about patient
+            $matchResult = $this->patientMatcher->matchOrCreatePatient($serviceRequest);
+            $patient = $matchResult['patient'];
+            $patientWarning = $matchResult['warning'];
+        }
+
         $patients = User::where('role', 'patient')
+            ->where('is_active', true)
             ->orderBy('first_name')
             ->get();
 
         $doctors = User::where('role', 'doctor')
+            ->where('is_active', true)
+            ->where('is_chief', false)
             ->orderBy('first_name')
             ->get();
 
         $nurses = User::where('role', 'nurse')
+            ->where('is_active', true)
             ->orderBy('first_name')
             ->get();
 
-        $types = [
-            'consultation' => 'Consultation',
-            'followup' => 'Suivi',
-            'exam' => 'Examen',
-            'emergency' => 'Urgence',
-            'vaccination' => 'Vaccination',
-            'home_visit' => 'Visite à domicile',
-            'telehealth' => 'Téléconsultation',
-        ];
-
+        $types = AppointmentType::options();
         $locations = [
-            'cabinet' => 'Cabinet',
-            'domicile' => 'Domicile',
-            'urgence' => 'Urgence',
+            'cabinet' => 'Cabinet médical',
+            'domicile' => 'Domicile du patient',
             'hopital' => 'Hôpital',
+            'urgence' => 'Urgence',
         ];
 
         $viewPrefix = $this->getViewPrefix();
@@ -162,19 +141,22 @@ class AppointmentController extends Controller
             'doctors',
             'nurses',
             'types',
-            'locations'
+            'locations',
+            'serviceRequest',
+            'patient',
+            'patientWarning'
         ));
     }
-
     /**
-     * Enregistrer un nouveau rendez-vous
+     * Store new appointment
      */
     public function store(Request $request)
     {
         $this->authorize('create', Appointment::class);
 
         $validated = $request->validate([
-            'patient_id' => 'required|exists:users,id',
+            'patient_id' => 'nullable|exists:users,id',
+            'service_request_id' => 'nullable|exists:service_requests,id',
             'doctor_id' => 'nullable|exists:users,id',
             'nurse_id' => 'nullable|exists:users,id',
             'appointment_date' => 'required|date|after_or_equal:today',
@@ -184,57 +166,99 @@ class AppointmentController extends Controller
             'reason' => 'nullable|string|max:1000',
             'notes' => 'nullable|string|max:2000',
             'patient_notes' => 'nullable|string|max:1000',
-            'location' => 'required|in:cabinet,domicile,urgence,hopital',
+            'location' => 'required|in:cabinet,domicile,hopital,urgence',
             'price' => 'nullable|numeric|min:0',
             'is_emergency' => 'boolean',
         ]);
 
-        // Convertir HH:MM en HH:MM:SS
-        $validated['appointment_time'] = $validated['appointment_time'] . ':00';
+        $serviceRequest = null;
+        $accountCreated = false;
 
-        // ⬇️⬇️⬇️ AJOUTE CETTE LIGNE - Cast duration en integer ⬇️⬇️⬇️
-        $validated['duration'] = (int) $validated['duration'];
+        // Handle ServiceRequest conversion
+        if ($request->filled('service_request_id')) {
+            $serviceRequest = ServiceRequest::findOrFail($request->service_request_id);
 
-        // Vérifier les conflits d'horaire
-        if ($request->filled('doctor_id')) {
-            $startTime = $validated['appointment_time'];
-            // ⬇️ Maintenant $validated['duration'] est un int
-            $endTime = Carbon::parse($startTime)->addMinutes($validated['duration'])->format('H:i:s');
-
-            $hasConflict = Appointment::where('doctor_id', $validated['doctor_id'])
-                ->where('appointment_date', $validated['appointment_date'])
-                ->whereIn('status', ['scheduled', 'confirmed', 'in_progress'])
-                ->where(function ($query) use ($startTime, $endTime) {
-                    $query->where(function ($q) use ($startTime, $endTime) {
-                        $q->where('appointment_time', '<', $endTime)
-                            ->whereRaw('ADDTIME(appointment_time, SEC_TO_TIME(duration * 60)) > ?', [$startTime]);
-                    });
-                })
-                ->exists();
-
-            if ($hasConflict) {
-                return back()->withErrors([
-                    'appointment_time' => 'Ce créneau horaire n\'est pas disponible pour ce médecin.'
-                ])->withInput();
+            if (Auth::user()->role === 'doctor') {
+                if ($serviceRequest->payment_status !== 'paid' || !$serviceRequest->sent_to_doctor) {
+                    abort(403, 'Vous ne pouvez pas convertir cette demande.');
+                }
             }
+
+            // If no patient selected, try to find or create one
+            if (!$request->filled('patient_id')) {
+                $matchResult = $this->patientMatcher->matchOrCreatePatient($serviceRequest);
+                $patient = $matchResult['patient'];
+
+                if (!$patient) {
+                    // Create new patient
+                    $patient = $this->patientMatcher->createPatientFromServiceRequest($serviceRequest);
+                    $accountCreated = true;
+                }
+
+                $validated['patient_id'] = $patient->id;
+            }
+        }
+
+        // Ensure patient_id is set
+        if (!isset($validated['patient_id']) || !$validated['patient_id']) {
+            return back()->withErrors([
+                'patient_id' => 'Vous devez sélectionner un patient ou fournir une demande de service valide.'
+            ])->withInput();
+        }
+
+        // Convert time and duration
+        $validated['appointment_time'] = $validated['appointment_time'] . ':00';
+        $validated['duration'] = (int)$validated['duration'];
+
+        // Set doctor if chief user
+        if (!$request->filled('doctor_id') && Auth::user()->isChief()) {
+            $validated['doctor_id'] = Auth::id();
+        }
+
+        // Check for scheduling conflicts
+        if ($request->filled('doctor_id')) {
+            $this->checkSchedulingConflict(
+                $validated['doctor_id'],
+                $validated['appointment_date'],
+                $validated['appointment_time'],
+                $validated['duration']
+            );
         }
 
         DB::beginTransaction();
         try {
             $appointment = Appointment::create($validated);
+
+            // Update ServiceRequest if applicable
+            if ($serviceRequest) {
+                $serviceRequest->update([
+                    'status' => 'converted',
+                    'patient_id' => $appointment->patient_id,
+                    'appointment_id' => $appointment->id,
+                    'handled_by' => Auth::id(),
+                    'handled_at' => now(),
+                ]);
+
+                // Send appropriate email
+                $this->sendAppointmentEmail($appointment, $accountCreated);
+            }
+
             DB::commit();
 
-            return redirect()->route('appointments.index')
-                ->with('success', 'Rendez-vous créé avec succès.');
+            return redirect()->route('appointments.show', $appointment)
+                ->with('success', $this->getSuccessMessage($serviceRequest, $accountCreated));
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Erreur: ' . $e->getMessage()])
+            Log::error('Erreur création rendez-vous: ' . $e->getMessage());
+
+            return back()->withErrors(['error' => 'Erreur lors de la création du rendez-vous: ' . $e->getMessage()])
                 ->withInput();
         }
     }
 
     /**
-     * Afficher les détails d'un rendez-vous
+     * Show appointment details
      */
     public function show(Appointment $appointment)
     {
@@ -247,7 +271,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Formulaire de modification
+     * Show edit form
      */
     public function edit(Appointment $appointment)
     {
@@ -263,6 +287,8 @@ class AppointmentController extends Controller
             ->get();
 
         $doctors = User::where('role', 'doctor')
+            ->where('is_active', true)
+            ->where('is_chief', false)
             ->orderBy('first_name')
             ->get();
 
@@ -270,22 +296,14 @@ class AppointmentController extends Controller
             ->orderBy('first_name')
             ->get();
 
-        $types = [
-            'consultation' => 'Consultation',
-            'followup' => 'Suivi',
-            'exam' => 'Examen',
-            'emergency' => 'Urgence',
-            'vaccination' => 'Vaccination',
-            'home_visit' => 'Visite à domicile',
-            'telehealth' => 'Téléconsultation',
-        ];
-
+        $types = AppointmentType::options();
         $locations = [
             'cabinet' => 'Cabinet',
             'domicile' => 'Domicile',
             'urgence' => 'Urgence',
             'hopital' => 'Hôpital',
         ];
+
         $viewPrefix = $this->getViewPrefix();
 
         return view("{$viewPrefix}.edit", compact(
@@ -299,7 +317,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Mettre à jour un rendez-vous
+     * Update appointment
      */
     public function update(Request $request, Appointment $appointment)
     {
@@ -318,32 +336,28 @@ class AppointmentController extends Controller
             'appointment_time' => 'required|date_format:H:i',
             'duration' => 'required|integer|min:15|max:240',
             'type' => 'required|in:consultation,followup,exam,emergency,vaccination,home_visit,telehealth',
+            'status' => 'nullable|in:scheduled,confirmed,in_progress,completed,cancelled,no_show',
             'reason' => 'nullable|string|max:1000',
             'notes' => 'nullable|string|max:2000',
             'patient_notes' => 'nullable|string|max:1000',
+            'cancellation_reason' => 'nullable|string|max:500',
             'location' => 'required|in:cabinet,domicile,urgence,hopital',
             'price' => 'nullable|numeric|min:0',
             'is_emergency' => 'boolean',
         ]);
 
-        // Convertir les valeurs
         $validated['appointment_time'] = $validated['appointment_time'] . ':00';
-        $validated['duration'] = (int) $validated['duration']; // ⬅️ AJOUTE CETTE LIGNE
+        $validated['duration'] = (int)$validated['duration'];
 
-        // Vérifier les conflits d'horaire
-        if ($request->filled('doctor_id')) {
-            $hasConflict = $appointment->hasConflictWith(
-                $request->doctor_id,
-                $request->appointment_date,
+        // Check conflicts if doctor changed
+        if ($request->filled('doctor_id') && $request->doctor_id !== $appointment->doctor_id) {
+            $this->checkSchedulingConflict(
+                $validated['doctor_id'],
+                $validated['appointment_date'],
                 $validated['appointment_time'],
-                $validated['duration'] // Maintenant c'est un int
+                $validated['duration'],
+                $appointment->id
             );
-
-            if ($hasConflict) {
-                return back()->withErrors([
-                    'appointment_time' => 'Ce créneau horaire n\'est pas disponible pour ce médecin.'
-                ])->withInput();
-            }
         }
 
         DB::beginTransaction();
@@ -361,7 +375,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Supprimer un rendez-vous
+     * Delete appointment
      */
     public function destroy(Appointment $appointment)
     {
@@ -374,7 +388,6 @@ class AppointmentController extends Controller
         DB::beginTransaction();
         try {
             $appointment->delete();
-
             DB::commit();
 
             return redirect()->route('appointments.index')
@@ -386,7 +399,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Confirmer un rendez-vous (AJAX)
+     * Confirm appointment (AJAX)
      */
     public function confirm(Appointment $appointment)
     {
@@ -397,7 +410,6 @@ class AppointmentController extends Controller
                 'success' => true,
                 'message' => 'Rendez-vous confirmé avec succès.',
                 'status' => $appointment->status,
-                'status_label' => $appointment->status_label,
             ]);
         }
 
@@ -408,7 +420,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Démarrer un rendez-vous (AJAX)
+     * Start appointment (AJAX)
      */
     public function start(Appointment $appointment)
     {
@@ -419,7 +431,6 @@ class AppointmentController extends Controller
                 'success' => true,
                 'message' => 'Rendez-vous démarré.',
                 'status' => $appointment->status,
-                'status_label' => $appointment->status_label,
             ]);
         }
 
@@ -430,7 +441,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Terminer un rendez-vous (AJAX)
+     * Complete appointment (AJAX)
      */
     public function complete(Request $request, Appointment $appointment)
     {
@@ -445,7 +456,6 @@ class AppointmentController extends Controller
                 'success' => true,
                 'message' => 'Rendez-vous terminé avec succès.',
                 'status' => $appointment->status,
-                'status_label' => $appointment->status_label,
             ]);
         }
 
@@ -456,7 +466,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Annuler un rendez-vous (AJAX)
+     * Cancel appointment (AJAX)
      */
     public function cancel(Request $request, Appointment $appointment)
     {
@@ -473,7 +483,6 @@ class AppointmentController extends Controller
                 'success' => true,
                 'message' => 'Rendez-vous annulé.',
                 'status' => $appointment->status,
-                'status_label' => $appointment->status_label,
             ]);
         }
 
@@ -484,7 +493,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Vérifier la disponibilité d'un créneau (AJAX)
+     * Check availability (AJAX)
      */
     public function checkAvailability(Request $request)
     {
@@ -493,7 +502,7 @@ class AppointmentController extends Controller
             'appointment_date' => 'required|date',
             'appointment_time' => 'required|date_format:H:i',
             'duration' => 'required|integer|min:15',
-            'appointment_id' => 'nullable|exists:appointments,id', // Pour l'édition
+            'appointment_id' => 'nullable|exists:appointments,id',
         ]);
 
         $startTime = Carbon::parse($validated['appointment_time']);
@@ -521,4 +530,82 @@ class AppointmentController extends Controller
                 : 'Créneau disponible.',
         ]);
     }
+
+    // ========== PRIVATE HELPERS ==========
+
+    /**
+     * Check for scheduling conflicts
+     */
+    private function checkSchedulingConflict(
+        $doctorId,
+        $appointmentDate,
+        $appointmentTime,
+        $duration,
+        $excludeAppointmentId = null
+    ) {
+        $endTime = Carbon::parse($appointmentTime)->addMinutes($duration)->format('H:i:s');
+
+        $query = Appointment::where('doctor_id', $doctorId)
+            ->where('appointment_date', $appointmentDate)
+            ->whereIn('status', ['scheduled', 'confirmed', 'in_progress'])
+            ->where(function ($query) use ($appointmentTime, $endTime) {
+                $query->where('appointment_time', '<', $endTime)
+                    ->whereRaw('ADDTIME(appointment_time, SEC_TO_TIME(duration * 60)) > ?', [$appointmentTime]);
+            });
+
+        if ($excludeAppointmentId) {
+            $query->where('id', '!=', $excludeAppointmentId);
+        }
+
+        if ($query->exists()) {
+            throw new \Exception('Ce créneau horaire n\'est pas disponible pour ce médecin.');
+        }
+    }
+
+    /**
+     * Send appointment confirmation email
+     */
+    private function sendAppointmentEmail(Appointment $appointment, bool $newAccount): void
+    {
+        try {
+            if ($newAccount) {
+                Mail::send('emails.activate-account', [
+                    'patient' => $appointment->patient,
+                    'appointment' => $appointment,
+                ], function ($message) use ($appointment) {
+                    $message->to($appointment->patient->email)
+                        ->subject('Votre rendez-vous est confirmé - Activez votre compte');
+                });
+            } else {
+                Mail::send('emails.appointment-confirmation', [
+                    'patient' => $appointment->patient,
+                    'appointment' => $appointment,
+                ], function ($message) use ($appointment) {
+                    $message->to($appointment->patient->email)
+                        ->subject('Confirmation de votre rendez-vous');
+                });
+            }
+        } catch (\Exception $e) {
+            Log::error('Erreur envoi email: ' . $e->getMessage());
+            // Don't block appointment creation if email fails
+        }
+    }
+
+    /**
+     * Get success message
+     */
+    private function getSuccessMessage($serviceRequest, bool $accountCreated): string
+    {
+        $message = 'Rendez-vous créé avec succès.';
+
+        if ($serviceRequest) {
+            $message .= ' La demande #' . $serviceRequest->id . ' a été convertie.';
+            if ($accountCreated) {
+                $message .= ' Un email d\'activation a été envoyé au patient.';
+            }
+        }
+
+        return $message;
+    }
+
 }

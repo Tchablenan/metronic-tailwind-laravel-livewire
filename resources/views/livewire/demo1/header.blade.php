@@ -1,20 +1,16 @@
 <!-- Header -->
-<header class="fixed top-0 left-0 right-0 z-50 flex items-stretch shrink-0 bg-white border-b border-gray-200 h-16 shadow-sm"
-        id="header">
-    <!-- Container -->
-    <div class="container mx-auto px-4 flex items-stretch justify-between lg:gap-4">
+<header class="fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 h-16 shadow-sm" id="header">
+    <div class="px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
 
         <!-- Mobile Logo -->
-        <div class="-ml-1 flex items-center gap-2.5 lg:hidden">
-            <a class="shrink-0" href="{{ route('dashboard') }}">
-                <img class="max-h-[25px] w-full" src="{{ asset('images/cmo-logo.png') }}" alt="CMO VISTAMD" />
+        <div class="flex items-center gap-3 lg:gap-6">
+            <a href="{{ route('dashboard') }}" class="flex items-center hover:opacity-90 transition-opacity">
+                <img class="h-12 w-auto object-contain" src="{{ asset('images/cmo-vistamd-logo.jpg') }}" alt="CMO VistaMD" />
             </a>
-            <div class="flex items-center">
-                <button class="inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-colors"
-                        data-kt-drawer-toggle="#sidebar">
-                    <i class="ki-filled ki-menu text-xl text-gray-600"></i>
-                </button>
-            </div>
+            <button class="inline-flex items-center justify-center lg:hidden w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    data-kt-drawer-toggle="#sidebar">
+                <i class="ki-filled ki-menu text-xl text-gray-600 dark:text-gray-400"></i>
+            </button>
         </div>
         <!-- End of Mobile Logo -->
 
@@ -24,7 +20,7 @@
         </div>
 
         <!-- Topbar -->
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2.5 ml-auto">
 
             {{-- Recherche --}}
             <div class="relative" x-data="{ open: false }">
@@ -127,149 +123,50 @@
                 </div>
             </div>
 
-            {{-- Messages --}}
+            <!-- User Menu Button -->
             <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open"
-                        class="relative inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                    <i class="ki-filled ki-messages text-xl text-gray-600"></i>
-                    <!-- Badge -->
-                    <span class="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                <button @click="open = !open" type="button" class="inline-flex items-center justify-center gap-2 px-3 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                        {{ strtoupper(substr(auth()->user()->first_name ?? auth()->user()->name, 0, 1)) }}{{ strtoupper(substr(auth()->user()->last_name ?? 'U', 0, 1)) }}
+                    </div>
+                    <i class="ki-filled ki-down text-xs text-gray-600 dark:text-gray-400 hidden sm:block"></i>
                 </button>
 
-                <!-- Dropdown -->
-                <div x-show="open"
-                     @click.away="open = false"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 scale-95"
-                     x-transition:enter-end="opacity-100 scale-100"
-                     x-transition:leave="transition ease-in duration-150"
-                     x-transition:leave-start="opacity-100 scale-100"
-                     x-transition:leave-end="opacity-0 scale-95"
-                     class="absolute right-0 mt-2 w-[320px] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50"
-                     style="display: none;">
-                    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200">
-                        <h3 class="text-sm font-semibold text-gray-900">Messages</h3>
-                        <span class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded-full">2 nouveaux</span>
-                    </div>
-                    <div class="flex flex-col items-center justify-center py-8">
-                        <i class="ki-filled ki-message-text-2 text-4xl text-gray-400 mb-3"></i>
-                        <p class="text-sm text-gray-600">Aucun nouveau message</p>
-                    </div>
-                </div>
-            </div>
+                <!-- User Dropdown -->
+                <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
 
-            {{-- Applications --}}
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open"
-                        class="inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                    <i class="ki-filled ki-element-11 text-xl text-gray-600"></i>
-                </button>
+                    <!-- User Info -->
+                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                                {{ strtoupper(substr(auth()->user()->first_name ?? auth()->user()->name, 0, 1)) }}{{ strtoupper(substr(auth()->user()->last_name ?? 'U', 0, 1)) }}
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ auth()->user()->first_name ?? auth()->user()->name }} {{ auth()->user()->last_name ?? '' }}</p>
 
-                <!-- Dropdown -->
-                <div x-show="open"
-                     @click.away="open = false"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 scale-95"
-                     x-transition:enter-end="opacity-100 scale-100"
-                     x-transition:leave="transition ease-in duration-150"
-                     x-transition:leave-start="opacity-100 scale-100"
-                     x-transition:leave-end="opacity-0 scale-95"
-                     class="absolute right-0 mt-2 w-[320px] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50"
-                     style="display: none;">
-                    <div class="px-5 py-3 border-b border-gray-200">
-                        <h3 class="text-sm font-semibold text-gray-900">Applications</h3>
-                    </div>
-                    <div class="p-5">
-                        <div class="grid grid-cols-3 gap-3">
-                            <!-- App 1 -->
-                            <a href="#" class="flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                                <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100">
-                                    <i class="ki-filled ki-calendar text-xl text-blue-600"></i>
-                                </div>
-                                <span class="text-xs font-medium text-gray-700 text-center">Calendrier</span>
-                            </a>
-                            <!-- App 2 -->
-                            <a href="{{ route('users.index') }}" class="flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                                <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100">
-                                    <i class="ki-filled ki-people text-xl text-green-600"></i>
-                                </div>
-                                <span class="text-xs font-medium text-gray-700 text-center">Utilisateurs</span>
-                            </a>
-                            <!-- App 3 -->
-                            <a href="#" class="flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                                <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-cyan-100">
-                                    <i class="ki-filled ki-bill text-xl text-cyan-600"></i>
-                                </div>
-                                <span class="text-xs font-medium text-gray-700 text-center">Facturation</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Menu Utilisateur --}}
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open"
-                        class="inline-flex items-center justify-center rounded-full">
-                    <img alt="{{ auth()->user()->full_name }}"
-                         class="w-9 h-9 rounded-full border-2 border-green-500 object-cover"
-                         src="{{ auth()->user()->avatar_url }}" />
-                </button>
-
-                <!-- Dropdown -->
-                <div x-show="open"
-                     @click.away="open = false"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 scale-95"
-                     x-transition:enter-end="opacity-100 scale-100"
-                     x-transition:leave="transition ease-in duration-150"
-                     x-transition:leave-start="opacity-100 scale-100"
-                     x-transition:leave-end="opacity-0 scale-95"
-                     class="absolute right-0 mt-2 w-[250px] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50"
-                     style="display: none;">
-
-                    <!-- En-tête utilisateur -->
-                    <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-gray-50">
-                        <img alt="{{ auth()->user()->full_name }}"
-                             class="w-10 h-10 rounded-full border-2 border-green-500 object-cover"
-                             src="{{ auth()->user()->avatar_url }}" />
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 truncate">
-                                {{ auth()->user()->full_name }}
-                            </p>
-                            <a href="mailto:{{ auth()->user()->email }}"
-                               class="text-xs text-gray-600 hover:text-blue-600 truncate block">
-                                {{ auth()->user()->email }}
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Menu items -->
+                    <!-- Menu Items -->
                     <div class="py-2">
-                        <a href="{{ route('users.show', auth()->id()) }}"
-                           class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                            <i class="ki-filled ki-profile-circle text-gray-500"></i>
+                        <a href="#" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <i class="ki-filled ki-profile-circle text-gray-500 dark:text-gray-400"></i>
                             <span>Mon Profil</span>
                         </a>
-                        <a href="{{ route('users.edit', auth()->id()) }}"
-                           class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                            <i class="ki-filled ki-setting-2 text-gray-500"></i>
+                        <a href="#" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <i class="ki-filled ki-setting-2 text-gray-500 dark:text-gray-400"></i>
                             <span>Paramètres</span>
                         </a>
                         @role('doctor')
-                        <a href="{{ route('users.index') }}"
-                           class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                            <i class="ki-filled ki-shield-tick text-gray-500"></i>
+                        <a href="{{ route('users.index') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <i class="ki-filled ki-security-user text-gray-500 dark:text-gray-400"></i>
                             <span>Administration</span>
                         </a>
                         @endrole
                     </div>
 
-                    <div class="border-t border-gray-200 px-4 py-2">
+                    <!-- Logout -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-2">
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
-                            <button type="submit"
-                                    class="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            <button type="submit" class="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
                                 <i class="ki-filled ki-entrance-left"></i>
                                 <span>Déconnexion</span>
                             </button>
@@ -279,15 +176,7 @@
             </div>
 
         </div>
-        <!-- End of Topbar -->
     </div>
-    <!-- End of Container -->
 </header>
 <!-- End of Header -->
 
-<!-- Alpine.js pour les dropdowns -->
-@once
-@push('scripts')
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-@endpush
-@endonce

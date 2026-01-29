@@ -1,19 +1,15 @@
 import './bootstrap';
-// Alpine.js is automatically included with Livewire, no need to import manually
-// This prevents "multiple instances of Alpine running" error
+import Alpine from 'alpinejs';
 
-// Metronic Core JavaScript functionality
+// Alpine est utilisé par Livewire et les composants
+window.Alpine = Alpine;
+Alpine.start();
+
+// Initialize Metronic functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize drawer functionality
     initDrawers();
-
-    // Initialize KTMenu (includes menu functionality)
     initKTMenu();
-
-    // Initialize sticky headers
     initStickyHeaders();
-
-    // Initialize modal functionality
     initModals();
 });
 

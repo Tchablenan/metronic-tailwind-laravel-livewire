@@ -316,11 +316,12 @@ public function index(Request $request)
             $tempPassword = 'Temp@' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
             $user->update(['password' => Hash::make($tempPassword)]);
 
-            // TODO: Envoyer email avec mot de passe temporaire
+            // Send email with temporary password
+            $user->notify(new \App\Notifications\NewUserCreatedNotification($user, $tempPassword));
 
             return response()->json([
                 'success' => true,
-                'message' => "Mot de passe réinitialisé!",
+                'message' => "Mot de passe réinitialisé! Un email a été envoyé.",
                 'temp_password' => $tempPassword
             ]);
 

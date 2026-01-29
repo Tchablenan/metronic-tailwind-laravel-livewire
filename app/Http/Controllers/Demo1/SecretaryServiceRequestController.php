@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Demo1;
 
 use App\Http\Controllers\Controller;
 use App\Models\ServiceRequest;
+use App\Models\User;
+use App\Notifications\ServiceRequestNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -37,11 +39,12 @@ class SecretaryServiceRequestController extends Controller
     }
 
     /**
-     * Envoyer au médecin chef
+    /**
+     * Send to chief doctor
      */
     public function sendToDoctor(ServiceRequest $serviceRequest)
     {
-        // Vérifier que c'est payé
+        // Check payment
         if ($serviceRequest->payment_status !== 'paid') {
             return redirect()->back()->with('error', 'Le patient doit d\'abord payer avant d\'envoyer au médecin.');
         }
@@ -50,16 +53,24 @@ class SecretaryServiceRequestController extends Controller
             'sent_to_doctor' => true,
             'sent_to_doctor_at' => now(),
             'sent_by' => Auth::id(),
-            'status' => 'contacted', // Marquer comme contacté
+            'status' => 'contacted',
         ]);
 
-        // TODO: Envoyer notification au médecin chef
+        // Notify chief doctors
+        $chiefDoctors = User::where('role', 'doctor')
+            ->where('is_chief', true)
+            ->where('is_active', true)
+            ->get();
 
-        return redirect()->back()->with('success', 'Demande envoyée au médecin chef avec succès.');
+        foreach ($chiefDoctors as $doctor) {
+            $doctor->notify(new \App\Notifications\ServiceRequestNotification($serviceRequest, 'forwarded'));
+        }
+
+        return redirect()->back()->with('success', 'Demande envoyée au médecin chef avec succès. Les notifications ont été envoyées.');
     }
 
     /**
-     * Annuler l'envoi au médecin (si erreur)
+     * Cancel doctor notification (if error)
      */
     public function cancelSendToDoctor(ServiceRequest $serviceRequest)
     {

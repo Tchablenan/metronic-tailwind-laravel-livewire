@@ -82,7 +82,7 @@
                 @endif
             </div>
             <p class="text-xl text-orange-400 font-bold mb-2">{{ $stats['pending_requests'] }}</p>
-            <p class="text-orange-400 text-sm  font-medium">Demandes à valider</p>
+            <p class="text-orange-50 text-sm  font-medium">Demandes à valider</p>
         </a>
 
         <!-- RDV du jour -->

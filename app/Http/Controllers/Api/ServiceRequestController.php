@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ServiceRequest;
+use App\Models\User;
+use App\Notifications\ServiceRequestNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class ServiceRequestController extends Controller
@@ -45,8 +49,33 @@ class ServiceRequestController extends Controller
         try {
             $serviceRequest = ServiceRequest::create($validator->validated());
 
-            // TODO: Envoyer notification email à l'équipe
-            // TODO: Envoyer SMS de confirmation au patient
+            // Send notification to team (all secretaries)
+            $secretaries = User::where('role', 'secretary')
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($secretaries as $secretary) {
+                $secretary->notify(new \App\Notifications\ServiceRequestNotification($serviceRequest, 'received'));
+            }
+
+            // Send confirmation to patient
+            try {
+                $patientEmail = $serviceRequest->email;
+                Mail::send('emails.service-request-confirmation', [
+                    'serviceRequest' => $serviceRequest,
+                ], function ($message) use ($patientEmail) {
+                    $message->to($patientEmail)
+                        ->subject('Confirmation de réception de votre demande de service');
+                });
+                Log::info('Service request confirmation email sent to: ' . $patientEmail);
+            } catch (\Exception $e) {
+                Log::error('Error sending confirmation email: ' . $e->getMessage());
+            }
+
+            // TODO: SMS de confirmation au patient (nécessite configuration Twilio ou similaire)
+            // if ($serviceRequest->phone_number) {
+            //     SmsService::send($serviceRequest->phone_number, 'Votre demande a été reçue. Référence: ' . $serviceRequest->id);
+            // }
 
             return response()->json([
                 'success' => true,
@@ -58,6 +87,7 @@ class ServiceRequestController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('ServiceRequest creation error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Une erreur est survenue lors de l\'envoi de votre demande. Veuillez réessayer.'

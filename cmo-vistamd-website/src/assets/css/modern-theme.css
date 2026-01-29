@@ -1,0 +1,708 @@
+/* src/assets/css/modern-theme.css */
+
+/* ====================================
+   MODERN COLOR PALETTE - CMO VISTAMD
+   ==================================== */
+
+:root {
+  /* Couleurs principales - Basées sur votre mockup */
+  --primary-color: #5B5FED;
+  --primary-dark: #4A4DCC;
+  --primary-light: #7C7FFF;
+  
+  /* Couleurs secondaires */
+  --secondary-color: #2E7D32;
+  --secondary-light: #43A047;
+  
+  /* Couleurs gradient hero */
+  --gradient-start: #5B5FED;
+  --gradient-end: #8B8FFF;
+  
+  /* Couleurs neutres */
+  --text-dark: #1a1a1a;
+  --text-gray: #6b7280;
+  --text-light: #9ca3af;
+  
+  /* Backgrounds */
+  --bg-white: #ffffff;
+  --bg-light: #f9fafb;
+  --bg-gray: #f3f4f6;
+  
+  /* Borders */
+  --border-color: #e5e7eb;
+  --border-light: #f3f4f6;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  
+  /* Spacing */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  
+  /* Border radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* ====================================
+   RESET & BASE STYLES
+   ==================================== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-dark);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Container fixes */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 15px;
+  padding-right: 15px;
+  width: 100%;
+}
+
+.container-full {
+  width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Row fixes */
+.row {
+  margin-left: -15px;
+  margin-right: -15px;
+  width: calc(100% + 30px);
+}
+
+[class*="col-"] {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* ====================================
+   MODERN HEADER
+   ==================================== */
+
+.header-one.style-two {
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Top bar moderne */
+.header-top-area-2 {
+  background: var(--bg-white);
+  border-bottom: 1px solid var(--border-light);
+  padding: 1rem 0;
+}
+
+.header-top-two {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Logo */
+.header-top-area-2 .logo img {
+  max-height: 60px;
+  width: auto;
+}
+
+/* Contact info moderne */
+.single-contact-area {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.single-contact-area i {
+  font-size: 20px;
+  color: var(--primary-color);
+}
+
+.single-contact-area .information span {
+  font-size: 13px;
+  color: var(--text-gray);
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/* Navigation principale */
+.header-wrapper-1 {
+  padding: 1rem 0;
+}
+
+.nav-area ul {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-area .main-nav > a {
+  color: var(--text-dark);
+  font-weight: 500;
+  font-size: 15px;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  padding: 0.5rem 0;
+}
+
+.nav-area .main-nav > a:hover {
+  color: var(--primary-color);
+}
+
+/* Search input moderne */
+.header-right .input-area {
+  position: relative;
+}
+
+.header-right .input-area input {
+  padding: 0.625rem 1rem 0.625rem 2.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  width: 200px;
+  transition: all 0.2s ease;
+}
+
+.header-right .input-area input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(91, 95, 237, 0.1);
+  width: 250px;
+}
+
+.header-right .input-area i {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-gray);
+  font-size: 16px;
+}
+
+/* Bouton Rendez-vous moderne */
+.header-right .rts-btn.btn-primary {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-lg);
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-right .rts-btn.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.header-right .rts-btn.btn-primary img {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
+}
+
+/* ====================================
+   MODERN HERO SECTION
+   ==================================== */
+
+.rts-banner-area-three {
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  padding: 5rem 0;
+  position: relative;
+  overflow: hidden;
+  min-height: 600px;
+}
+
+/* Effet géométrique de fond */
+.rts-banner-area-three::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 800px;
+  height: 800px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.rts-banner-area-three::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -5%;
+  width: 600px;
+  height: 600px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.rts-banner-area-three .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Texte hero */
+.banner-three-inner-content .title {
+  color: white;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.banner-three-inner-content .subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 400;
+  margin-bottom: 2rem;
+}
+
+/* Boutons hero */
+.button-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.button-wrapper .rts-btn {
+  background: white;
+  color: var(--primary-color);
+  padding: 1rem 2rem;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-lg);
+}
+
+.button-wrapper .rts-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Call info */
+.call-infor-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: white;
+}
+
+.call-infor-wrapper .icon {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.call-infor-wrapper .info span {
+  display: block;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.call-infor-wrapper .info a {
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+  text-decoration: none;
+}
+
+/* Horaires sur le côté */
+.left-side-tect-top,
+.left-side-tect-top-bottom {
+  position: absolute;
+  left: 0;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  padding: 1rem 2rem;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+.left-side-tect-top {
+  top: 20%;
+}
+
+.left-side-tect-top-bottom {
+  top: 35%;
+}
+
+/* ====================================
+   FORMULAIRE MODERNE "DEVENIR UN PATIENT"
+   ==================================== */
+
+.take-consultent-area-form {
+  background: white;
+  padding: 2.5rem;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  backdrop-filter: blur(10px);
+}
+
+.take-consultent-area-form .title {
+  color: var(--primary-color);
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.take-consultent-area-form p {
+  color: var(--text-gray);
+  font-size: 15px;
+  margin-bottom: 1.5rem;
+}
+
+.take-consultent-area-form input,
+.take-consultent-area-form select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+  background: var(--bg-light);
+}
+
+.take-consultent-area-form input:focus,
+.take-consultent-area-form select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(91, 95, 237, 0.1);
+  background: white;
+}
+
+.take-consultent-area-form input::placeholder {
+  color: var(--text-light);
+}
+
+.take-consultent-area-form .input-half-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.take-consultent-area-form button[type="submit"] {
+  width: 100%;
+  padding: 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.take-consultent-area-form button[type="submit"]:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ====================================
+   SECTIONS DE SERVICES
+   ==================================== */
+
+.short-service-area {
+  margin-top: -4rem;
+  position: relative;
+  z-index: 2;
+}
+
+.single-short-service {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.single-short-service:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl);
+}
+
+.single-short-service .icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 1rem;
+  background: rgba(91, 95, 237, 0.1);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.single-short-service .icon img {
+  width: 40px;
+  height: 40px;
+  filter: hue-rotate(200deg);
+}
+
+.single-short-service .title {
+  color: var(--text-dark);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ====================================
+   MODERN FOOTER
+   ==================================== */
+
+.rts-footer-area {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: rgba(255, 255, 255, 0.9);
+  padding-top: 4rem;
+}
+
+.subscribe-area-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.subscribe-area-start .logo img {
+  max-height: 70px;
+  margin-bottom: 1.5rem;
+  filter: brightness(1.1);
+}
+
+.subscribe-area {
+  display: flex;
+  gap: 1rem;
+  max-width: 500px;
+  width: 100%;
+}
+
+.subscribe-area input {
+  flex: 1;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.subscribe-area input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.subscribe-area input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.subscribe-area button {
+  padding: 0.875rem 1.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.subscribe-area button:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.footer-wrapper-style-between {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 3rem;
+  padding: 3rem 0;
+}
+
+.single-wized .title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.single-wized .title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: var(--primary-color);
+  border-radius: 2px;
+}
+
+.single-wized .body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.single-wized .body a,
+.single-wized .body .location {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: block;
+}
+
+.single-wized .body a:hover {
+  color: var(--primary-color);
+  padding-left: 0.5rem;
+}
+
+.nav-bottom {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.copyright-area {
+  background: #0a0f1a;
+  padding: 1.5rem 0;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.copyright-area-inner p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  margin: 0;
+}
+
+.copyright-area-inner a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+@media (max-width: 767px) {
+  .subscribe-area {
+    flex-direction: column;
+  }
+  
+  .subscribe-area button {
+    width: 100%;
+  }
+  
+  .footer-wrapper-style-between {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 991px) {
+  .banner-three-inner-content .title {
+    font-size: 40px;
+  }
+  
+  .header-right .input-area input {
+    width: 150px;
+  }
+  
+  .nav-area ul {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .banner-three-inner-content .title {
+    font-size: 32px;
+  }
+  
+  .button-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .take-consultent-area-form {
+    padding: 1.5rem;
+  }
+  
+  .take-consultent-area-form .input-half-wrapper {
+    grid-template-columns: 1fr;
+  }
+  
+  .left-side-tect-top,
+  .left-side-tect-top-bottom {
+    display: none;
+  }
+}

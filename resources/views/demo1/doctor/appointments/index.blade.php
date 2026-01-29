@@ -103,18 +103,18 @@
                         @endforeach
                     </select>
 
-                    <!-- Filtre médecin (seulement pour doctor/secretary) -->
-                    @if (auth()->user()->role === 'doctor' || auth()->user()->role === 'secretary')
-                        <select name="doctor_id"
-                            class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all cursor-pointer">
-                            <option value="">Tous les médecins</option>
-                            @foreach ($doctors as $doctor)
-                                <option value="{{ $doctor->id }}"
-                                    {{ request('doctor_id') == $doctor->id ? 'selected' : '' }}>
-                                    Dr. {{ $doctor->full_name }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <!-- Filtre médecin : UNIQUEMENT visible pour le médecin chef -->
+                    @if(Auth::user()->isChief())
+                    <select name="doctor_id"
+                        class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all cursor-pointer">
+                        <option value="">Tous les médecins</option>
+                        @foreach ($doctors as $doctor)
+                            <option value="{{ $doctor->id }}"
+                                {{ request('doctor_id') == $doctor->id ? 'selected' : '' }}>
+                                Dr. {{ $doctor->full_name }}
+                            </option>
+                        @endforeach
+                    </select>
                     @endif
 
                     <button type="submit"
@@ -144,9 +144,11 @@
                             <th class="px-4 py-4 text-left font-medium text-gray-600 text-xs uppercase tracking-wide">
                                 Patient
                             </th>
+                            @if(Auth::user()->isChief())
                             <th class="px-4 py-4 text-left font-medium text-gray-600 text-xs uppercase tracking-wide">
                                 Médecin
                             </th>
+                            @endif
                             <th class="px-4 py-4 text-left font-medium text-gray-600 text-xs uppercase tracking-wide">
                                 Type
                             </th>
@@ -190,6 +192,7 @@
                                         </div>
                                     </div>
                                 </td>
+                                @if(Auth::user()->isChief())
                                 <td class="px-4 py-4">
                                     @if ($appointment->doctor)
                                         <span class="text-sm text-gray-700">
@@ -199,6 +202,7 @@
                                         <span class="text-sm text-gray-400">Non assigné</span>
                                     @endif
                                 </td>
+                                @endif
                                 <td class="px-4 py-4">
                                     @php
                                         $typeColors = [

@@ -1,15 +1,52 @@
-/* Tailwind CSS v4 via @tailwindcss/vite */
+/* Tailwind CSS v4 + @tailwindcss/vite */
 
+/* Scanner les fichiers pour les classes Tailwind */
 @source '../views/**/*.blade.php';
 @source '../../app/Livewire/**/*.php';
-@source '../../app/Http/Controllers/**/*.php';
 @source '../../routes/**/*.php';
 
+/* Thème personnalisé */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary: #06B6D4;
+  --color-secondary: #8B5CF6;
+  --color-success: #10B981;
+  --color-danger: #EF4444;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
+  --color-background: #ffffff;
+  --color-foreground: #1F2937;
+  --color-muted-foreground: #6B7280;
+  --color-secondary-foreground: #9CA3AF;
+  --color-border: #E5E7EB;
+}
 
-    --color-primary: #06B6D4;
-    --color-secondary: #8B5CF6;
+/* Mode sombre */
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #1F2937;
+    --color-foreground: #F9FAFB;
+    --color-muted-foreground: #D1D5DB;
+    --color-border: #374151;
+  }
+}
+
+/* Styles de base */
+@layer base {
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    @apply text-foreground;
+  }
+
+  a {
+    @apply text-primary transition-colors;
+  }
+
+  a:hover {
+    opacity: 0.8;
+  }
 }
 
