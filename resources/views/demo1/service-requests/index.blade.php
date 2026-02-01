@@ -5,12 +5,25 @@
 
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-2xl font-bold text-gray-900">
-            Demandes de Service
-        </h1>
-        <p class="text-sm text-gray-600 mt-1">
-            Gérez les demandes reçues depuis le site vitrine
-        </p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Demandes de Service
+                </h1>
+                <p class="text-sm text-gray-600 mt-1">
+                    Gérez les demandes reçues depuis le site vitrine
+                </p>
+            </div>
+
+            {{-- Bouton créer demande pour secrétaire --}}
+            @can('create', App\Models\ServiceRequest::class)
+            <a href="{{ route('secretary.service-requests.create') }}"
+               style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 14px; font-weight: 500; color: white; background-color: rgb(34, 197, 94); border-radius: 8px;">
+                <i class="ki-filled ki-plus"></i>
+                Nouvelle demande
+            </a>
+            @endcan
+        </div>
     </div>
 
     <!-- Cartes statistiques -->

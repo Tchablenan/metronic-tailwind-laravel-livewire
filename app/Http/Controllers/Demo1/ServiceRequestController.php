@@ -112,7 +112,7 @@ class ServiceRequestController extends Controller
         }
 
         // Pagination
-        $serviceRequests = $query->paginate(20)->withQueryString();
+        $serviceRequests = $query->paginate(5)->withQueryString();
 
         // =====================================================
         // STATISTIQUES SELON LE RÔLE

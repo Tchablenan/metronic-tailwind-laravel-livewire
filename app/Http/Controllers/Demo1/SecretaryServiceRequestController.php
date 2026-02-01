@@ -21,7 +21,7 @@ class SecretaryServiceRequestController extends Controller
 
         $serviceRequests = ServiceRequest::query()
             ->orderByDesc('created_at')
-            ->paginate(15);
+            ->paginate(5);
 
         return view('demo1.secretary.service-requests.index', compact('serviceRequests'));
     }

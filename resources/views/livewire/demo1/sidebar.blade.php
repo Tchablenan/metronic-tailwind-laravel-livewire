@@ -77,6 +77,20 @@
                 </a>
                 @endcan
 
+                <!-- Secretary Service Requests Management (Secretary only) -->
+                @role('secretary')
+                <a href="{{ route('secretary.service-requests.index') }}" class="kt-menu-item">
+                    <div class="kt-menu-link flex grow items-center gap-[10px] border border-transparent py-[6px] pe-[10px] ps-[10px] rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors {{ request()->routeIs('secretary.service-requests.*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="kt-menu-icon w-[20px] text-base">
+                            <i class="ki-filled ki-plus-circle"></i>
+                        </span>
+                        <span class="kt-menu-title text-sm font-medium text-foreground">
+                            Créer une demande
+                        </span>
+                    </div>
+                </a>
+                @endrole
+
                 <!-- Separator -->
                 <div class="my-2 border-t border-t-border"></div>
 

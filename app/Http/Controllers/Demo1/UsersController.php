@@ -44,7 +44,7 @@ public function index(Request $request)
     $query->orderBy($sortBy, $sortOrder);
 
     // Pagination avec conservation des paramètres de recherche
-    $users = $query->paginate(15)->withQueryString();
+    $users = $query->paginate(5)->withQueryString();
 
     // Liste des rôles pour le filtre
     $roles = [

@@ -63,7 +63,7 @@ class AppointmentController extends Controller
         $query = $this->filterService->applyRoleBasedFilters($query, Auth::user());
         $query = $this->filterService->applySorting($query);
 
-        $appointments = $query->paginate(20)->withQueryString();
+        $appointments = $query->paginate(5)->withQueryString();
 
         $statuses = AppointmentStatus::options();
         $types = AppointmentType::options();

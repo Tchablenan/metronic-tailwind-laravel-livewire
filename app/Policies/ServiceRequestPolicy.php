@@ -26,12 +26,22 @@ class ServiceRequestPolicy
     }
 
     /**
-     * Créer une demande (via API publique)
+     * Créer une demande
+     * Secrétaire et Chef médecin peuvent créer
      */
     public function create(User $user): bool
     {
-        // N'importe qui peut créer (API publique)
-        return true;
+        // Secrétaire peut créer (au cabinet)
+        if ($user->role === 'secretary') {
+            return true;
+        }
+
+        // Chef médecin peut créer (admin)
+        if ($user->role === 'doctor' && $user->is_chief) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

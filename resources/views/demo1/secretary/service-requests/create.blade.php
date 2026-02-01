@@ -244,14 +244,14 @@
             </div>
 
             <!-- Boutons -->
-            <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
                 <a href="{{ route('secretary.service-requests.index') }}"
-                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                   style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 14px; font-weight: 500; color: #374151; background-color: white; border: 1px solid #d1d5db; border-radius: 8px; transition: background-color 0.2s;">
                     <i class="ki-filled ki-cross text-sm"></i>
                     Annuler
                 </a>
                 <button type="submit"
-                        class="inline-flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 hover:shadow-md active:scale-95 transition-all">
+                        style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 24px; font-size: 14px; font-weight: 500; color: white; background-color: rgb(34, 197, 94); border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
                     <i class="ki-filled ki-check text-sm"></i>
                     Créer la demande
                 </button>
