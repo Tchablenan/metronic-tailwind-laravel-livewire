@@ -22,9 +22,25 @@ class ServiceRequestController extends Controller
     {
         $user = Auth::user();
 
-        // Base query avec relations
-        $query = ServiceRequest::with(['patient', 'handler', 'appointment', 'sender'])
-            ->orderBy('created_at', 'desc');
+        // =====================================================
+        // RÉCUPÉRER LES PARAMÈTRES DE FILTRE
+        // =====================================================
+        $search = $request->input('search');
+        $status = $request->input('status');
+        $serviceType = $request->input('service_type');
+        $urgency = $request->input('urgency');
+        $paymentStatus = $request->input('payment_status');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $hasInsurance = $request->input('has_insurance');
+        $hasMedicalData = $request->input('has_medical_data');
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortOrder = $request->input('sort_order', 'desc');
+
+        // =====================================================
+        // CONSTRUIRE LA REQUÊTE AVEC FILTRES
+        // =====================================================
+        $query = ServiceRequest::query();
 
         // =====================================================
         // FILTRAGE AUTOMATIQUE PAR RÔLE
@@ -37,185 +53,134 @@ class ServiceRequestController extends Controller
         // La secrétaire voit TOUT (pas de filtre)
 
         // =====================================================
-        // FILTRES UTILISATEUR
+        // APPLIQUER LES SCOPES DE FILTRAGE
         // =====================================================
-
-        // Filtre par statut
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Filtre par type de service
-        if ($request->filled('service_type')) {
-            $query->where('service_type', $request->service_type);
-        }
-
-        // Filtre par urgence
-        if ($request->filled('urgency')) {
-            $query->where('urgency', $request->urgency);
-        }
-
-        // Filtre par statut de paiement
-        if ($request->filled('payment_status')) {
-            $query->where('payment_status', $request->payment_status);
-        }
-
-        // Filtre "Payé mais non envoyé" (pour secrétaire)
-        if ($request->filled('paid_not_sent') && $user->role === 'secretary') {
-            $query->where('payment_status', 'paid')
-                  ->where('sent_to_doctor', false)
-                  ->whereNotIn('status', ['converted', 'rejected']);
-        }
-
-        // Filtre par envoi au médecin
-        if ($request->filled('sent_to_doctor')) {
-            $query->where('sent_to_doctor', $request->sent_to_doctor === 'true');
-        }
 
         // Recherche globale
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone_number', 'like', "%{$search}%");
-            });
+        if ($search) {
+            $query->search($search);
         }
 
-        // Filtre par date de création
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+        // Filtres individuels
+        if ($status) {
+            $query->byStatus($status);
         }
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+        if ($serviceType) {
+            $query->byServiceType($serviceType);
         }
-
-        // Tri personnalisé
-        if ($request->filled('sort_by')) {
-            $sortBy = $request->sort_by;
-            $sortOrder = $request->get('sort_order', 'desc');
-
-            switch ($sortBy) {
-                case 'urgency':
-                    $query->orderByRaw("CASE urgency WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END");
-                    break;
-                case 'payment_date':
-                    $query->orderBy('paid_at', $sortOrder);
-                    break;
-                case 'amount':
-                    $query->orderBy('payment_amount', $sortOrder);
-                    break;
-                default:
-                    $query->orderBy($sortBy, $sortOrder);
-            }
+        if ($urgency) {
+            $query->byUrgency($urgency);
+        }
+        if ($paymentStatus) {
+            $query->byPaymentStatus($paymentStatus);
+        }
+        if ($hasInsurance) {
+            $query->hasInsurance();
+        }
+        if ($hasMedicalData) {
+            $query->hasMedicalData();
         }
 
-        // Pagination
-        $serviceRequests = $query->paginate(5)->withQueryString();
+        // Filtre de date
+        if ($dateFrom || $dateTo) {
+            $query->byDateRange($dateFrom, $dateTo);
+        }
 
         // =====================================================
-        // STATISTIQUES SELON LE RÔLE
+        // APPLIQUER LE TRI
         // =====================================================
+        $validSortFields = ['created_at', 'updated_at', 'payment_amount', 'urgency', 'status'];
+        if (in_array($sortBy, $validSortFields)) {
+            $query->orderBy($sortBy, strtolower($sortOrder) === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        // =====================================================
+        // CALCULER LES STATISTIQUES SELON LE RÔLE
+        // =====================================================
+        $totalQuery = clone $query;
 
         if ($user->role === 'doctor') {
-            // Stats pour le médecin : seulement demandes envoyées
-            $stats = [
-                'total' => ServiceRequest::where('payment_status', 'paid')
-                                        ->where('sent_to_doctor', true)
-                                        ->count(),
-                'to_validate' => ServiceRequest::where('payment_status', 'paid')
-                                              ->where('sent_to_doctor', true)
-                                              ->whereNotIn('status', ['converted', 'rejected'])
-                                              ->count(),
-                'converted' => ServiceRequest::where('status', 'converted')
-                                            ->where('sent_to_doctor', true)
-                                            ->count(),
-                'rejected' => ServiceRequest::where('status', 'rejected')
-                                           ->where('sent_to_doctor', true)
-                                           ->count(),
-                'urgent' => ServiceRequest::where('payment_status', 'paid')
-                                         ->where('sent_to_doctor', true)
-                                         ->where('urgency', 'high')
-                                         ->whereNotIn('status', ['converted', 'rejected'])
-                                         ->count(),
-            ];
-
-            // Statuts disponibles pour le médecin
-            $statuses = [
-                'contacted' => 'En attente de validation',
-                'converted' => 'Converti en RDV',
-                'rejected' => 'Rejeté',
+            // Stats pour le médecin : seulement demandes envoyées et payées
+            $statistics = [
+                'to_validate' => (clone $totalQuery)->whereNotIn('status', ['converted', 'rejected'])->count(),
+                'converted' => (clone $totalQuery)->byStatus('converted')->count(),
+                'rejected' => (clone $totalQuery)->byStatus('rejected')->count(),
+                'urgent' => (clone $totalQuery)->byUrgency('high')->whereNotIn('status', ['converted', 'rejected'])->count(),
+                'total' => $totalQuery->count(),
+                'total_amount' => (clone $totalQuery)->sum('payment_amount') ?? 0,
             ];
         } else {
             // Stats pour la secrétaire : toutes les demandes
-            $stats = [
-                'total' => ServiceRequest::count(),
-                'pending' => ServiceRequest::where('status', 'pending')->count(),
-                'unpaid' => ServiceRequest::where('payment_status', 'unpaid')
-                                         ->whereIn('status', ['pending', 'contacted'])
-                                         ->count(),
-                'paid_not_sent' => ServiceRequest::where('payment_status', 'paid')
-                                                 ->where('sent_to_doctor', false)
-                                                 ->whereNotIn('status', ['converted', 'rejected'])
-                                                 ->count(),
-                'sent_to_doctor' => ServiceRequest::where('sent_to_doctor', true)->count(),
-                'converted' => ServiceRequest::where('status', 'converted')->count(),
-                'total_amount_today' => ServiceRequest::where('payment_status', 'paid')
-                                                     ->whereDate('paid_at', today())
-                                                     ->sum('payment_amount'),
+            $statistics = [
+                'pending' => (clone $totalQuery)->byStatus('pending')->count(),
+                'in_progress' => (clone $totalQuery)->byStatus('in_progress')->count(),
+                'completed' => (clone $totalQuery)->byStatus('completed')->count(),
+                'total_amount' => (clone $totalQuery)->sum('payment_amount') ?? 0,
+                'total_with_medical_data' => (clone $totalQuery)->hasMedicalData()->count(),
+                'total' => $totalQuery->count(),
             ];
 
-            // Statuts disponibles pour la secrétaire
-            $statuses = [
-                'pending' => 'En attente',
-                'contacted' => 'Contacté',
-                'converted' => 'Converti en RDV',
-                'rejected' => 'Rejeté',
-                'cancelled' => 'Annulé',
-            ];
+            // Calculer le pourcentage
+            $statistics['medical_data_percentage'] = $statistics['total'] > 0
+                ? round(($statistics['total_with_medical_data'] / $statistics['total']) * 100, 1)
+                : 0;
         }
 
         // =====================================================
-        // OPTIONS DE FILTRES (identiques pour tous)
+        // PAGINER LES RÉSULTATS
         // =====================================================
+        $serviceRequests = $query->paginate(10);
 
-        $serviceTypes = [
-            'appointment' => 'Rendez-vous médical',
+        // =====================================================
+        // OPTIONS POUR LES FILTRES (DROPDOWNS)
+        // =====================================================
+        $statusOptions = [
+            'pending' => 'En Attente',
+            'in_progress' => 'En Traitement',
+            'completed' => 'Complétée',
+            'cancelled' => 'Annulée',
+        ];
+
+        $serviceTypeOptions = [
+            'appointment' => 'Rendez-vous',
             'home_visit' => 'Visite à domicile',
             'emergency' => 'Urgence',
-            'transport' => 'Transport médicalisé',
+            'transport' => 'Transport',
             'consultation' => 'Consultation',
-            'other' => 'Autre',
         ];
 
-        $urgencies = [
-            'low' => 'Faible',
+        $urgencyOptions = [
+            'low' => 'Basse',
             'medium' => 'Moyenne',
-            'high' => 'Élevée',
+            'high' => 'Haute',
         ];
 
-        $paymentStatuses = [
-            'unpaid' => 'Non payé',
-            'paid' => 'Payé',
-            'refunded' => 'Remboursé',
-        ];
-
-        $paymentMethods = [
-            'cash' => 'Espèces',
-            'mobile_money' => 'Mobile Money',
-            'card' => 'Carte bancaire',
-            'insurance' => 'Assurance',
+        $paymentStatusOptions = [
+            'pending' => 'En Attente',
+            'paid' => 'Payée',
+            'partial' => 'Partiellement Payée',
+            'overdue' => 'En Retard',
         ];
 
         return view('demo1.service-requests.index', compact(
             'serviceRequests',
-            'stats',
-            'statuses',
-            'serviceTypes',
-            'urgencies',
-            'paymentStatuses',
-            'paymentMethods'
+            'statistics',
+            'search',
+            'status',
+            'serviceType',
+            'urgency',
+            'paymentStatus',
+            'dateFrom',
+            'dateTo',
+            'hasInsurance',
+            'hasMedicalData',
+            'statusOptions',
+            'serviceTypeOptions',
+            'urgencyOptions',
+            'paymentStatusOptions',
+            'user'
         ));
     }
 

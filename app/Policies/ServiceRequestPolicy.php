@@ -13,7 +13,7 @@ class ServiceRequestPolicy
     public function viewAny(User $user): bool
     {
         // Chef et Secretary peuvent voir les demandes
-        return in_array($user->role, ['doctor', 'secretary']);
+        return in_array($user->role, ['doctor', 'secretary', 'admin']);
     }
 
     /**
@@ -22,43 +22,72 @@ class ServiceRequestPolicy
     public function view(User $user, ServiceRequest $serviceRequest): bool
     {
         // Chef et Secretary peuvent voir
-        return in_array($user->role, ['doctor', 'secretary']);
+        return in_array($user->role, ['doctor', 'secretary', 'admin']);
     }
 
     /**
      * Créer une demande
-     * Secrétaire et Chef médecin peuvent créer
+     * Seule la secrétaire peut créer
      */
     public function create(User $user): bool
     {
-        // Secrétaire peut créer (au cabinet)
-        if ($user->role === 'secretary') {
+        return $user->role === 'secretary';
+    }
+
+    /**
+     * Mettre à jour une demande
+     *
+     * Permissions:
+     * - Admin peut modifier n'importe quelle demande
+     * - Chef médecin peut modifier n'importe quelle demande
+     * - Secrétaire peut modifier UNIQUEMENT si:
+     *   1. Statut est "pending" (En attente)
+     *   2. Aucune restriction d'ownership (tous les secrétaires peuvent modifier les pending)
+     */
+    public function update(User $user, ServiceRequest $serviceRequest): bool
+    {
+        // Admin peut modifier
+        if ($user->role === 'admin') {
             return true;
         }
 
-        // Chef médecin peut créer (admin)
-        if ($user->role === 'doctor' && $user->is_chief) {
+        // Médecin chef peut modifier
+        if ($user->isChief()) {
             return true;
+        }
+
+        // Secrétaire peut modifier uniquement les demandes en attente
+        if ($user->role === 'secretary') {
+            return $serviceRequest->canBeEdited();
         }
 
         return false;
     }
 
     /**
-     * Modifier une demande
-     */
-    public function update(User $user, ServiceRequest $serviceRequest): bool
-    {
-        // Chef et Secretary seulement
-        return in_array($user->role, ['doctor', 'secretary']);
-    }
-
-    /**
-     * Supprimer une demande
+     * Supprimer une demande (soft delete)
      */
     public function delete(User $user, ServiceRequest $serviceRequest): bool
     {
-        // Chef et Secretary seulement
-        return in_array($user->role, ['doctor', 'secretary']);
+        // Seule l'admin peut supprimer
+        return $user->role === 'admin';
+    }
+
+    /**
+     * Restaurer une demande supprimée
+     */
+    public function restore(User $user, ServiceRequest $serviceRequest): bool
+    {
+        // Seule l'admin peut restaurer
+        return $user->role === 'admin';
+    }
+
+    /**
+     * Supprimer définitivement une demande
+     */
+    public function forceDelete(User $user, ServiceRequest $serviceRequest): bool
+    {
+        // Seule l'admin peut supprimer définitivement
+        return $user->role === 'admin';
     }
 }

@@ -120,10 +120,10 @@ Route::middleware(['auth'])->group(function () {
 
         /*
     |--------------------------------------------------------------------------
-    | Secretary Service Requests Actions
+    | Secretary Service Requests Actions (🔐 SECRÉTAIRE UNIQUEMENT)
     |--------------------------------------------------------------------------
     */
-    Route::prefix('secretary/service-requests')->name('secretary.service-requests.')->group(function () {
+    Route::middleware('role:secretary')->prefix('secretary/service-requests')->name('secretary.service-requests.')->group(function () {
         // Listing et création (NOUVELLES ROUTES)
         Route::get('/', [SecretaryServiceRequestController::class, 'index'])->name('index');
         Route::get('create', [SecretaryServiceRequestController::class, 'create'])->name('create');
@@ -131,6 +131,11 @@ Route::middleware(['auth'])->group(function () {
 
         // Détails et actions existantes
         Route::get('{serviceRequest}', [SecretaryServiceRequestController::class, 'show'])->name('show');
+
+        // Édition et mise à jour (✅ NOUVELLES ROUTES)
+        Route::get('{serviceRequest}/edit', [SecretaryServiceRequestController::class, 'edit'])->name('edit');
+        Route::put('{serviceRequest}', [SecretaryServiceRequestController::class, 'update'])->name('update');
+
         Route::post('/{serviceRequest}/mark-paid', [SecretaryServiceRequestController::class, 'markPaid'])->name('mark-paid');
         Route::post('/{serviceRequest}/send-to-doctor', [SecretaryServiceRequestController::class, 'sendToDoctor'])->name('send-to-doctor');
         Route::post('/{serviceRequest}/cancel-send', [SecretaryServiceRequestController::class, 'cancelSendToDoctor'])->name('cancel-send');

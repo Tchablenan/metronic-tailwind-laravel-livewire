@@ -6,6 +6,45 @@ This project integrates Metronic Tailwind HTML themes (Demo1 and Demo2) into a L
 
 **Goal**: Convert Metronic Tailwind HTML demo1 and demo2 index.html files into Laravel Livewire, maintaining the Symfony-style view structure with demo1/ and demo2/ directories for layouts and partials.
 
+## Prerequis et requirements
+
+- Environnement: Windows, macOS ou Linux avec Git
+- PHP: >= 8.2 avec extensions OpenSSL, PDO, Mbstring, Tokenizer, XML, Ctype, JSON, BCMath, Fileinfo
+- Composer: >= 2.6
+- Node.js: >= 20.x et npm
+- Outils front: Vite 5+, Tailwind CSS 4, Alpine.js 3
+- Base de donnees: MySQL/MariaDB ou PostgreSQL (config via .env)
+
+### Preparation rapide
+```bash
+git clone <repo-url>
+cd metronic-tailwind-laravel-livewire
+cp .env.example .env
+composer install
+npm install
+php artisan key:generate
+```
+
+### Configuration applicative
+- Renseigner les variables DB_* dans .env
+- (Optionnel) `php artisan storage:link` pour exposer le stockage public
+
+### Migration et fixtures
+```bash
+php artisan migrate --seed
+```
+
+### Lancer le projet en local
+```bash
+# terminal 1
+php artisan serve
+
+# terminal 2
+npm run dev
+```
+
+Pour un flux tout-en-un, `composer run dev` lance serveur HTTP, file d'attente, journaux Pail et Vite en parallele.
+
 ## Tech Stack
 
 - **Laravel**: 11.x (Latest)

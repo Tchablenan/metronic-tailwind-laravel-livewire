@@ -3,19 +3,32 @@
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <!-- Header -->
-    <div class="flex items-center gap-4 pb-8">
-        <a href="{{ route('secretary.service-requests.index') }}"
-           class="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors">
-            <i class="ki-filled ki-left text-xl text-gray-600"></i>
-        </a>
-        <div class="flex flex-col gap-1">
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
-                {{ $serviceRequest->full_name }}
-            </h1>
-            <p class="text-sm text-gray-600">
-                Demande de {{ ucfirst(str_replace('_', ' ', $serviceRequest->service_type)) }}
-            </p>
+    <div class="flex items-center justify-between gap-4 pb-8">
+        <div class="flex items-center gap-4">
+            <a href="{{ route('secretary.service-requests.index') }}"
+               class="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors">
+                <i class="ki-filled ki-left text-xl text-gray-600"></i>
+            </a>
+            <div class="flex flex-col gap-1">
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+                    {{ $serviceRequest->full_name }}
+                </h1>
+                <p class="text-sm text-gray-600">
+                    Demande de {{ ucfirst(str_replace('_', ' ', $serviceRequest->service_type)) }}
+                </p>
+            </div>
         </div>
+
+        <!-- Bouton Éditer (Secrétaire uniquement) -->
+        @if(Auth::user()->role === 'secretary')
+            @can('update', $serviceRequest)
+                <a href="{{ route('secretary.service-requests.edit', $serviceRequest->id) }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 hover:shadow-md active:scale-95 transition-all">
+                    <i class="ki-filled ki-pencil"></i>
+                    <span>Modifier</span>
+                </a>
+            @endcan
+        @endif
     </div>
 
     <!-- Messages flash -->
@@ -119,6 +132,192 @@
                 </div>
             </div>
 
+            <!-- 🏥 TRIAGE INITIAL -->
+            @if($serviceRequest->temperature || $serviceRequest->blood_pressure_systolic || $serviceRequest->weight)
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="ki-filled ki-pulse text-red-600"></i> Triage Initial (Signes Vitaux)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @if($serviceRequest->temperature)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Température</label>
+                        <p class="mt-1 text-lg font-semibold text-gray-900">{{ number_format($serviceRequest->temperature, 1) }}°C</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->blood_pressure_systolic || $serviceRequest->blood_pressure_diastolic)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Tension Artérielle</label>
+                        <p class="mt-1 text-lg font-semibold text-gray-900">{{ $serviceRequest->formatted_blood_pressure ?? 'Non enregistrée' }}</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->weight)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Poids</label>
+                        <p class="mt-1 text-lg font-semibold text-gray-900">{{ number_format($serviceRequest->weight, 2) }} kg</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->height)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Taille</label>
+                        <p class="mt-1 text-lg font-semibold text-gray-900">{{ number_format($serviceRequest->height, 2) }} cm</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->weight && $serviceRequest->height)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">IMC (Indice de Masse Corporelle)</label>
+                        <p class="mt-1 text-lg font-semibold"
+                           style="color: {{ $serviceRequest->bmi < 18.5 ? '#2563eb' : ($serviceRequest->bmi < 25 ? '#16a34a' : ($serviceRequest->bmi < 30 ? '#ca8a04' : '#dc2626')) }}">
+                            {{ number_format($serviceRequest->bmi, 2) }}
+                            <span class="text-xs font-normal">
+                                @if($serviceRequest->bmi < 18.5)
+                                    (Maigreur)
+                                @elseif($serviceRequest->bmi < 25)
+                                    (Normal)
+                                @elseif($serviceRequest->bmi < 30)
+                                    (Surpoids)
+                                @else
+                                    (Obésité)
+                                @endif
+                            </span>
+                        </p>
+                    </div>
+                    @endif
+                </div>
+
+                @if($serviceRequest->known_allergies || $serviceRequest->current_medications)
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    @if($serviceRequest->known_allergies)
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-600">Allergies Connues</label>
+                        <p class="mt-1 text-gray-900 whitespace-pre-wrap">{{ $serviceRequest->known_allergies }}</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->current_medications)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Médicaments Actuels</label>
+                        <p class="mt-1 text-gray-900 whitespace-pre-wrap">{{ $serviceRequest->current_medications }}</p>
+                    </div>
+                    @endif
+                </div>
+                @endif
+            </div>
+            @endif
+
+            <!-- 🛡️ INFORMATIONS ASSURANCE -->
+            @if($serviceRequest->has_insurance)
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="ki-filled ki-shield-tick text-green-600"></i> Informations Assurance
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @if($serviceRequest->insurance_company)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Compagnie d'Assurance</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ $serviceRequest->insurance_company }}</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->insurance_policy_number)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Numéro de Police</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ $serviceRequest->insurance_policy_number }}</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->insurance_coverage_rate)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Taux de Couverture</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ $serviceRequest->insurance_coverage_rate }}%</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->insurance_ceiling)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Plafond</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ number_format($serviceRequest->insurance_ceiling, 0) }} FCFA</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->insurance_expiry_date)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Date d'Expiration</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ $serviceRequest->insurance_expiry_date->format('d/m/Y') }}</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @else
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="ki-filled ki-shield-tick text-gray-400"></i> Informations Assurance
+                </h3>
+                <p class="text-gray-500 italic">Le patient n'est pas assuré.</p>
+            </div>
+            @endif
+
+            <!-- 📋 EXAMENS ANTÉRIEURS -->
+            @if($serviceRequest->has_previous_exams)
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="ki-filled ki-file-down text-purple-600"></i> Examens Antérieurs
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @if($serviceRequest->previous_exam_type)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Type d'Examen</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ $serviceRequest->getPreviousExamTypeLabel() }}</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->previous_exam_name)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Nom de l'Examen</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ $serviceRequest->previous_exam_name }}</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->previous_exam_facility)
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-600">Établissement</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ $serviceRequest->previous_exam_facility }}</p>
+                    </div>
+                    @endif
+
+                    @if($serviceRequest->previous_exam_date)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Date de l'Examen</label>
+                        <p class="mt-1 text-gray-900 font-semibold">{{ $serviceRequest->previous_exam_date->format('d/m/Y') }}</p>
+                    </div>
+                    @endif
+                </div>
+
+                @if($serviceRequest->hasExamFile())
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <label class="block text-sm font-medium text-gray-600 mb-2">Fichier d'Examen</label>
+                    <a href="{{ $serviceRequest->exam_file_url }}"
+                       target="_blank"
+                       class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                        <i class="ki-filled ki-file-down text-blue-700"></i>
+                        <span>Télécharger le fichier</span>
+                    </a>
+                </div>
+                @endif
+            </div>
+            @else
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="ki-filled ki-file-down text-gray-400"></i> Examens Antérieurs
+                </h3>
+                <p class="text-gray-500 italic">Aucun examen antérieur enregistré.</p>
+            </div>
+            @endif
+
             <!-- Statut -->
             <div class="bg-white rounded-xl shadow-md p-6 mb-6">
                 <h3 class="text-lg font-bold text-gray-900 mb-4">📋 Statut</h3>
@@ -135,6 +334,19 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 🔴 RAISON DE REJET (Si rejetée) -->
+            @if($serviceRequest->status === 'rejected' && $serviceRequest->rejection_reason)
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6 border-l-4 border-red-500">
+                <h2 class="text-lg font-bold text-red-600 mb-4 flex items-center gap-2">
+                    <i class="ki-filled ki-cross-circle"></i>
+                    Raison du rejet
+                </h2>
+                <p class="text-sm text-gray-900 p-4 bg-red-50 rounded-lg border border-red-200">
+                    {{ $serviceRequest->rejection_reason }}
+                </p>
+            </div>
+            @endif
 
             <!-- Actions -->
             @if($serviceRequest->payment_status === 'paid' && $serviceRequest->status === 'pending')
