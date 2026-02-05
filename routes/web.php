@@ -2,6 +2,7 @@
 use App\Http\Controllers\Demo1\SecretaryServiceRequestController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\Demo1\UsersController;
+use App\Http\Controllers\DashboardController;
 use App\Livewire\Auth\ForgotPasswordForm;
 use App\Livewire\Auth\LoginForm;
 use App\Livewire\Auth\RegisterForm;
@@ -55,24 +56,7 @@ Route::middleware(['auth'])->group(function () {
     | Dashboard - Redirection par rôle
     |--------------------------------------------------------------------------
     */
-    Route::get('/dashboard', function () {
-        $user = Auth::user();
-
-        // Rediriger chaque rôle vers son dashboard spécifique
-        return match($user->role) {
-            'doctor' => view('demo1.doctor.dashboard'),
-            'secretary' => view('demo1.secretary.dashboard'),
-            'nurse' => view('demo1.nurse.dashboard'),
-            'patient' => view('demo1.patient.dashboard'),
-            default => view('demo1.dashboard'),
-        };
-    })->name('dashboard');
-
-    /*
-    |--------------------------------------------------------------------------
-    | User Management (Permissions gérées par UserPolicy)
-    |--------------------------------------------------------------------------
-    */
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', [UsersController::class, 'index'])->name('index');
         Route::get('/create', [UsersController::class, 'create'])->name('create');
@@ -103,18 +87,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('check-availability', [AppointmentController::class, 'checkAvailability'])->name('check-availability');
     });
 
-        /*
+    /*
     |--------------------------------------------------------------------------
-    | Service Requests (Demandes du site vitrine)
+    | Service Requests (Demandes du site vitrine - CHEF + SECRÉTAIRES UNIQUEMENT)
     |--------------------------------------------------------------------------
     */
-    Route::prefix('service-requests')->name('service-requests.')->group(function () {
-        Route::get('/', [ServiceRequestController::class, 'index'])->name('index');
-        Route::get('/{serviceRequest}', [ServiceRequestController::class, 'show'])->name('show');
-        Route::post('/{serviceRequest}/contacted', [ServiceRequestController::class, 'markContacted'])->name('contacted');
-        Route::post('/{serviceRequest}/convert', [ServiceRequestController::class, 'convertToAppointment'])->name('convert');
-        Route::post('/{serviceRequest}/reject', [ServiceRequestController::class, 'reject'])->name('reject');
-        Route::post('/{serviceRequest}/notes', [ServiceRequestController::class, 'addNotes'])->name('notes');
+    Route::middleware('service-request-access')->group(function () {
+        Route::prefix('service-requests')->name('service-requests.')->group(function () {
+            Route::get('/', [ServiceRequestController::class, 'index'])->name('index');
+            Route::get('/{serviceRequest}', [ServiceRequestController::class, 'show'])->name('show');
+            Route::post('/{serviceRequest}/contacted', [ServiceRequestController::class, 'markContacted'])->name('contacted');
+            Route::post('/{serviceRequest}/convert', [ServiceRequestController::class, 'convertToAppointment'])->name('convert');
+            Route::post('/{serviceRequest}/reject', [ServiceRequestController::class, 'reject'])->name('reject');
+            Route::post('/{serviceRequest}/notes', [ServiceRequestController::class, 'addNotes'])->name('notes');
+        });
     });
 
 

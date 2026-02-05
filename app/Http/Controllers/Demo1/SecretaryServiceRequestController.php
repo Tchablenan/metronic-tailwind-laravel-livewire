@@ -186,7 +186,11 @@ class SecretaryServiceRequestController extends Controller
             'urgency' => 'required|in:low,medium,high',
             'message' => 'nullable|string|max:2000',
             'preferred_date' => 'nullable|date|after_or_equal:today',
-            'preferred_time' => 'nullable|date_format:H:i',
+            'preferred_time' => ['nullable', function ($attribute, $value, $fail) {
+                if (!empty($value) && !preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $value)) {
+                    $fail('The preferred time must be in HH:mm or HH:mm:ss format.');
+                }
+            }],
             'payment_amount' => 'required|numeric|min:0',
             'payment_method' => 'required|in:cash,card,mobile_money,bank_transfer',
 
@@ -329,7 +333,11 @@ class SecretaryServiceRequestController extends Controller
             'urgency' => 'required|in:low,medium,high',
             'message' => 'nullable|string|max:2000',
             'preferred_date' => 'nullable|date|after_or_equal:today',
-            'preferred_time' => 'nullable|date_format:H:i',
+            'preferred_time' => ['nullable', function ($attribute, $value, $fail) {
+                if (!empty($value) && !preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $value)) {
+                    $fail('The preferred time must be in HH:mm or HH:mm:ss format.');
+                }
+            }],
             'payment_amount' => 'required|numeric|min:0',
             'payment_method' => 'required|in:cash,card,mobile_money,bank_transfer',
 
@@ -363,6 +371,11 @@ class SecretaryServiceRequestController extends Controller
             'previous_exam_facility' => 'nullable|required_if:has_previous_exams,1|string|max:255',
             'previous_exam_date' => 'nullable|date|before_or_equal:today',
             'previous_exam_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+
+            // ============================================
+            // 📝 NOTE D'ACCOMPAGNEMENT
+            // ============================================
+            'note' => 'nullable|string|max:2000',
         ], [
             'first_name.required' => 'Le prénom est obligatoire.',
             'last_name.required' => 'Le nom est obligatoire.',
@@ -399,12 +412,35 @@ class SecretaryServiceRequestController extends Controller
         DB::beginTransaction();
 
         try {
+            // Préserver les données originales pour le statut et la note
+            $note = $validated['note'] ?? null;
+            $wasRejected = $serviceRequest->status === 'rejected'; // Sauvegarder le statut original
+            unset($validated['note']); // Ne pas sauvegarder la note dans validated
+            
             $serviceRequest->update($validated);
+
+            // Si la demande était rejetée, la remettre à "contacted" et ajouter la note
+            if ($wasRejected) {
+                $serviceRequest->update([
+                    'status' => 'contacted',
+                    'rejection_reason' => null, // Effacer la raison du rejet
+                    'internal_notes' => ($serviceRequest->internal_notes ?? '') . "\n\n[" . now()->format('d/m/Y H:i') . "] Secrétaire: " . ($note ?? 'Demande renvoyée au médecin'),
+                ]);
+            }
+
+            // Envoyer une notification au médecin chef
+            $chiefDoctor = User::where('role', 'doctor')
+                ->where('is_chief', true)
+                ->first();
+            
+            if ($chiefDoctor && $wasRejected) {
+                $chiefDoctor->notify(new ServiceRequestNotification($serviceRequest, 'resubmitted', $note));
+            }
 
             DB::commit();
 
             return redirect()->route('secretary.service-requests.show', $serviceRequest)
-                ->with('success', 'Demande modifiée avec succès.');
+                ->with('success', $wasRejected ? 'Demande modifiée et renvoyée au médecin chef avec succès.' : 'Demande modifiée avec succès.');
         } catch (\Exception $e) {
             DB::rollBack();
 

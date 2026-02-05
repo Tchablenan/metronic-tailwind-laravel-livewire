@@ -17,6 +17,7 @@
                                         ->where('sent_to_doctor', false)
                                         ->whereNotIn('status', ['converted', 'rejected'])
                                         ->count(),
+        'rejected_requests' => ServiceRequest::where('status', 'rejected')->count(),
         'today_appointments' => Appointment::whereDate('appointment_date', today())->count(),
     ];
 
@@ -34,6 +35,12 @@
         ->whereNotIn('status', ['converted', 'rejected'])
         ->orderByRaw("CASE urgency WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END")
         ->orderBy('paid_at', 'asc')
+        ->take(5)
+        ->get();
+
+    // Demandes REJETÉES (PRIORITÉ 3 - À RELANCER)
+    $rejectedRequests = ServiceRequest::where('status', 'rejected')
+        ->orderBy('updated_at', 'desc')
         ->take(5)
         ->get();
 
@@ -136,6 +143,21 @@
             </div>
             <p class="text-3xl font-bold text-gray-900">{{ $stats['pending_requests'] }}</p>
             <p class="text-xs text-gray-600 mt-1">Demandes à traiter</p>
+        </a>
+
+        <!-- Demandes rejetées -->
+        <a href="{{ route('service-requests.index', ['status' => 'rejected']) }}"
+           class="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow border-l-4 border-orange-500">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i class="ki-filled ki-close-circle text-orange-600 text-xl"></i>
+                </div>
+                @if($stats['rejected_requests'] > 0)
+                <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                @endif
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ $stats['rejected_requests'] }}</p>
+            <p class="text-xs text-gray-600 mt-1">À relancer</p>
         </a>
 
     </div>
@@ -323,6 +345,49 @@
                     </div>
                     <p class="text-sm font-semibold text-gray-900">Tout est envoyé au médecin</p>
                     <p class="text-xs text-gray-600 mt-1">Parfait !</p>
+                </div>
+                @endforelse
+            </div>
+        </div>
+
+        <!-- Demandes rejetées à relancer -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="px-6 py-4 bg-orange-50 border-b border-orange-200 flex items-center justify-between">
+                <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <i class="ki-filled ki-close-circle text-orange-600"></i>
+                    Demandes rejetées à relancer
+                </h3>
+                <a href="{{ route('service-requests.index', ['status' => 'rejected']) }}" class="text-sm text-orange-600 hover:text-orange-700 font-medium">
+                    Voir tout →
+                </a>
+            </div>
+            <div class="divide-y divide-gray-100">
+                @forelse($rejectedRequests as $request)
+                <a href="{{ route('service-requests.show', $request) }}"
+                   class="block px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700 border border-orange-300">
+                                    🔴 Rejeté
+                                </span>
+                                <span class="text-xs text-gray-500">{{ $request->updated_at->diffForHumans() }}</span>
+                            </div>
+                            <p class="text-sm font-semibold text-gray-900">{{ $request->full_name }}</p>
+                            <div class="flex items-center gap-3 text-xs text-gray-600 mt-1">
+                                <span>📱 {{ $request->phone_number }}</span>
+                                <span>Raison: {{ $request->rejection_reason ?? 'Non spécifiée' }}</span>
+                            </div>
+                        </div>
+                        <i class="ki-filled ki-right text-gray-400 text-sm"></i>
+                    </div>
+                </a>
+                @empty
+                <div class="px-6 py-12 text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="ki-filled ki-check-circle text-green-600 text-3xl"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-900">Aucune demande rejetée</p>
                 </div>
                 @endforelse
             </div>

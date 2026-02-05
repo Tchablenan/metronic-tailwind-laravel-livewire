@@ -63,12 +63,32 @@ class AppointmentPolicy
 
     /**
      * Créer un rendez-vous
+     * 
+     * Permissions :
+     * - Médecin chef : PEUT créer des RDV
+     * - Médecin régulier : NE PEUT PAS créer (lecture seule)
+     * - Secrétaire : PEUT créer des RDV
+     * - Patient : PEUT demander un RDV
      */
     public function create(User $user): bool
     {
+        // ✅ Médecin chef peut créer
+        if ($user->isChief()) {
+            return true;
+        }
 
+        // ✅ Secrétaire peut créer
+        if ($user->role === 'secretary') {
+            return true;
+        }
 
-        return in_array($user->role, ['doctor', 'secretary', 'nurse', 'patient']);
+        // ✅ Patient peut créer une demande
+        if ($user->role === 'patient') {
+            return true;
+        }
+
+        // ❌ Médecin régulier NE peut PAS créer (lecture seule)
+        return false;
     }
 
     /**

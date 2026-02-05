@@ -517,11 +517,32 @@
             <div class="bg-white rounded-lg shadow p-6">
                 <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <i class="ki-filled ki-note text-purple-600"></i>
-                    Notes internes
+                    Historique des Notes
                 </h2>
-                <p class="text-sm text-gray-900 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    {{ $serviceRequest->internal_notes }}
-                </p>
+                <div class="space-y-3">
+                    @php
+                        // Parser les notes pour afficher l'historique
+                        $notes = explode('[', $serviceRequest->internal_notes ?? '');
+                        $notes = array_filter($notes, fn($note) => !empty(trim($note)));
+                    @endphp
+                    
+                    @foreach($notes as $note)
+                        @php
+                            $timestamp = substr($note, 0, strpos($note, ']'));
+                            $noteText = substr($note, strpos($note, '] ') + 2);
+                            $isSecretary = str_contains($noteText, 'Secrétaire:');
+                        @endphp
+                        <div class="p-4 {{ $isSecretary ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50 border-l-4 border-gray-300' }} rounded-r-lg">
+                            <div class="flex items-start justify-between mb-2">
+                                <span class="text-xs font-medium {{ $isSecretary ? 'text-blue-700 bg-blue-100' : 'text-gray-700 bg-gray-100' }} px-2 py-1 rounded">
+                                    {{ $isSecretary ? '📝 Secrétaire' : '👨‍⚕️ Médecin' }}
+                                </span>
+                                <span class="text-xs text-gray-500">{{ $timestamp }}</span>
+                            </div>
+                            <p class="text-sm text-gray-900">{{ str_replace('Secrétaire: ', '', $noteText) }}</p>
+                        </div>
+                    @endforeach
+                </div>
             </div>
             @endif
 

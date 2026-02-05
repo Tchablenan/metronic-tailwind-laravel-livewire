@@ -320,33 +320,69 @@
 
             <!-- Statut -->
             <div class="bg-white rounded-xl shadow-md p-6 mb-6">
-                <h3 class="text-lg font-bold text-gray-900 mb-4">📋 Statut</h3>
-                <div class="space-y-3">
+                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <i class="ki-filled ki-document text-blue-600"></i>
+                        Statut de la Demande
+                    </span>
+                </h3>
+                <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-600">Statut</label>
-                        <span class="mt-1 inline-block px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-100 text-blue-800">
-                            {{ ucfirst($serviceRequest->status) }}
-                        </span>
+                        <label class="block text-sm font-medium text-gray-600 mb-2">État Actuel</label>
+                        <div class="flex items-center gap-3">
+                            <span class="inline-block px-4 py-2 rounded-lg text-sm font-bold
+                                {{ $serviceRequest->status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : '' }}
+                                {{ $serviceRequest->status === 'contacted' ? 'bg-blue-100 text-blue-800 border border-blue-300' : '' }}
+                                {{ $serviceRequest->status === 'converted' ? 'bg-green-100 text-green-800 border border-green-300' : '' }}
+                                {{ $serviceRequest->status === 'rejected' ? 'bg-red-100 text-red-800 border border-red-300' : '' }}">
+                                @if($serviceRequest->status === 'pending')
+                                    ⏳ En attente
+                                @elseif($serviceRequest->status === 'contacted')
+                                    📞 Contactée
+                                @elseif($serviceRequest->status === 'converted')
+                                    ✅ Convertie
+                                @elseif($serviceRequest->status === 'rejected')
+                                    ❌ Rejetée
+                                @else
+                                    {{ ucfirst($serviceRequest->status) }}
+                                @endif
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600">Créée le</label>
-                        <p class="mt-1 text-sm text-gray-900">{{ $serviceRequest->created_at->format('d/m/Y H:i') }}</p>
+
+                    @if($serviceRequest->status === 'rejected' && $serviceRequest->rejection_reason)
+                    <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                        <p class="text-sm font-semibold text-red-900 mb-1">🔴 Raison du rejet:</p>
+                        <p class="text-sm text-red-800">{{ $serviceRequest->rejection_reason }}</p>
                     </div>
+                    @endif
+
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <label class="block font-medium text-gray-600 mb-1">Créée le</label>
+                            <p class="text-gray-900">{{ $serviceRequest->created_at->format('d/m/Y à H:i') }}</p>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-600 mb-1">Modifiée le</label>
+                            <p class="text-gray-900">{{ $serviceRequest->updated_at->format('d/m/Y à H:i') }}</p>
+                        </div>
+                    </div>
+
+                    @if($serviceRequest->status === 'rejected')
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p class="text-sm text-blue-900 mb-3">
+                            <i class="ki-filled ki-information-2"></i>
+                            Cette demande a été rejetée. Vous pouvez la modifier et la renvoyer au médecin chef.
+                        </p>
+                        <a href="{{ route('secretary.service-requests.edit', $serviceRequest->id) }}"
+                           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="ki-filled ki-pencil"></i>
+                            Modifier et Renvoyer
+                        </a>
+                    </div>
+                    @endif
                 </div>
             </div>
-
-            <!-- 🔴 RAISON DE REJET (Si rejetée) -->
-            @if($serviceRequest->status === 'rejected' && $serviceRequest->rejection_reason)
-            <div class="bg-white rounded-xl shadow-md p-6 mb-6 border-l-4 border-red-500">
-                <h2 class="text-lg font-bold text-red-600 mb-4 flex items-center gap-2">
-                    <i class="ki-filled ki-cross-circle"></i>
-                    Raison du rejet
-                </h2>
-                <p class="text-sm text-gray-900 p-4 bg-red-50 rounded-lg border border-red-200">
-                    {{ $serviceRequest->rejection_reason }}
-                </p>
-            </div>
-            @endif
 
             <!-- Actions -->
             @if($serviceRequest->payment_status === 'paid' && $serviceRequest->status === 'pending')

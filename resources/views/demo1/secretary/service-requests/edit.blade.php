@@ -566,6 +566,27 @@
                 </div>
             </div>
 
+            <!-- Section 7: Note d'accompagnement -->
+            <div class="mb-6 pt-6 border-t border-gray-200">
+                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="ki-filled ki-note-2 text-purple-600"></i>
+                    Note d'Accompagnement (Optionnelle)
+                </h3>
+                <div>
+                    <label for="note" class="block text-sm font-medium text-gray-700 mb-2">
+                        Ajouter une note pour le médecin chef
+                    </label>
+                    <textarea name="note" id="note"
+                              rows="4"
+                              placeholder="Ex: Raison de la modification, points importants à noter, etc."
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('note') border-red-500 @enderror">{{ old('note', '') }}</textarea>
+                    <p class="mt-1 text-xs text-gray-500">Cette note sera ajoutée à la demande et visible par le médecin.</p>
+                    @error('note')
+                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
             <!-- Boutons d'action -->
             <div class="pt-6 border-t border-gray-200 flex gap-3 justify-end">
                 <a href="{{ route('secretary.service-requests.show', $serviceRequest->id) }}"
@@ -575,7 +596,7 @@
                 <button type="submit"
                         class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 hover:shadow-md active:scale-95 transition-all">
                     <i class="ki-filled ki-check mr-2"></i>
-                    Enregistrer les Modifications
+                    Enregistrer et Renvoyer au Médecin
                 </button>
             </div>
         </form>

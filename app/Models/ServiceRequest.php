@@ -22,6 +22,7 @@ class ServiceRequest extends Model
         'preferred_time',
         'urgency',
         'status',
+        'rejection_reason',
         // ✅ AJOUTE CES CHAMPS DE PAIEMENT
         'payment_status',
         'payment_amount',
@@ -303,8 +304,8 @@ class ServiceRequest extends Model
      */
     public function canBeEdited(): bool
     {
-        // Seulement pendant le statut "pending" ou "in_progress"
-        return in_array($this->status, ['pending', 'in_progress']);
+        // Éditable pendant le statut "pending", "in_progress" ou "rejected"
+        return in_array($this->status, ['pending', 'in_progress', 'rejected']);
     }
 
     /**

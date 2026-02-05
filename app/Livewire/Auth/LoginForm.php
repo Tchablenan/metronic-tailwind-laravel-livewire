@@ -42,7 +42,7 @@ class LoginForm extends Component
 
             // Succès - rediriger vers dashboard
             session()->regenerate();
-            $this->redirect(route('demo1.index'), navigate: true);
+            $this->redirect(route('dashboard'), navigate: true);
         } else {
             // Échec - afficher erreur
             $this->loginError = 'Email ou mot de passe incorrect.';
