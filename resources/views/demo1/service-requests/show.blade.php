@@ -525,7 +525,7 @@
                         $notes = explode('[', $serviceRequest->internal_notes ?? '');
                         $notes = array_filter($notes, fn($note) => !empty(trim($note)));
                     @endphp
-                    
+
                     @foreach($notes as $note)
                         @php
                             $timestamp = substr($note, 0, strpos($note, ']'));

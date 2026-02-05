@@ -324,7 +324,7 @@
             ->take(5)
             ->get();
     @endphp
-    
+
     @if($resubmittedRequests->count() > 0)
     <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
         <div class="flex items-center justify-between mb-6">

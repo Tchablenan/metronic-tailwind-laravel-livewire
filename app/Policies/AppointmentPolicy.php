@@ -63,7 +63,7 @@ class AppointmentPolicy
 
     /**
      * Créer un rendez-vous
-     * 
+     *
      * Permissions :
      * - Médecin chef : PEUT créer des RDV
      * - Médecin régulier : NE PEUT PAS créer (lecture seule)

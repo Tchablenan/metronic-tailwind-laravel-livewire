@@ -416,7 +416,7 @@ class SecretaryServiceRequestController extends Controller
             $note = $validated['note'] ?? null;
             $wasRejected = $serviceRequest->status === 'rejected'; // Sauvegarder le statut original
             unset($validated['note']); // Ne pas sauvegarder la note dans validated
-            
+
             $serviceRequest->update($validated);
 
             // Si la demande était rejetée, la remettre à "contacted" et ajouter la note
@@ -432,7 +432,7 @@ class SecretaryServiceRequestController extends Controller
             $chiefDoctor = User::where('role', 'doctor')
                 ->where('is_chief', true)
                 ->first();
-            
+
             if ($chiefDoctor && $wasRejected) {
                 $chiefDoctor->notify(new ServiceRequestNotification($serviceRequest, 'resubmitted', $note));
             }

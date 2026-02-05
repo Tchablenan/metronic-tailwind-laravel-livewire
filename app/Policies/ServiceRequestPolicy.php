@@ -9,7 +9,7 @@ class ServiceRequestPolicy
 {
     /**
      * Voir la liste des demandes de service
-     * 
+     *
      * Permissions:
      * - Médecin chef : PEUT voir TOUTES les demandes
      * - Secrétaire : PEUT voir TOUTES les demandes
@@ -33,7 +33,7 @@ class ServiceRequestPolicy
 
     /**
      * Voir une demande spécifique
-     * 
+     *
      * Permissions:
      * - Médecin chef : PEUT voir n'importe quelle demande
      * - Secrétaire : PEUT voir n'importe quelle demande

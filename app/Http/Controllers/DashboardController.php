@@ -139,8 +139,8 @@ class DashboardController extends Controller
         // Taux de complétion RDV
         $totalAppointments = Appointment::count();
         $completedAppointments = Appointment::where('status', 'completed')->count();
-        $completionRate = $totalAppointments > 0 
-            ? ($completedAppointments / $totalAppointments) * 100 
+        $completionRate = $totalAppointments > 0
+            ? ($completedAppointments / $totalAppointments) * 100
             : 0;
 
         // ============================================
